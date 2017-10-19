@@ -1,0 +1,39 @@
+#!/bin/bash
+#
+# - - -
+# authority: HHS/AC-3,4
+# authority: CIS/7.1
+# authority: CIS5/8.1
+# description: Detects rhosts support in PAM configuration
+# - - -
+set -e
+
+. `dirname $0`/../../lib/functions
+
+check()
+{
+    # Anything written to stdout or stderr indicates a compliance problem.
+
+    for file_real in /etc/pam.d/* ; do 
+
+        # Prepare an ideal pam config file:
+#        file_scratch=$(scratchfile $file_real)
+#        grep -v rhosts_auth $file_real > ${file_scratch}
+        
+        # Compare the original against the ideal:
+#        report_diff $file_real $file_scratch
+        
+        check_user_group_perms root wheel 0644 $file_real
+    done 
+}
+
+case "$1" in 
+    check)
+        check;
+        ;;
+    *)
+        echo "Usage: $0 {check|fix}"
+        ;;
+esac
+exit 0
+

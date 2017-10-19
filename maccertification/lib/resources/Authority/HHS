@@ -1,0 +1,34 @@
+title=HHS Minimum Security Configuration Standards for Departmental Operating Systems and Applications 8/28/2006
+AC-2,1a   No "." (current working directory) ... exist in root's $PATH.
+AC-2,1b   No ... group/world writable files exist in root's $PATH.
+AC-2,2   Install TCP Wrappers.
+AC-2,3   Remove user .netrc files.
+AC-2,4   Set "mesg n" as default for all users.
+AC-2,5   Set default group for root account.
+AC-2,6   Verify that no UID 0 accounts exist other than root.
+AC-3,1   Set user home directories to be as restrictive as possible.
+AC-3,2   Set Account Expiration Parameters On Active Accounts.
+AC-3,3   Require Authentication For Single-User Mode.
+AC-3,4  Remove rhosts support in pam.
+AC-3,5  Remove empty crontab files and restrict file permissions to authorized users.
+AC-3,6  Restrict at/cron to authorized users.
+AC-3,7  Restrict root logins to system console.
+AC-3,8  Set LILO/GRUB Password.
+AC-8,1  Set a warning banner for console and GUI based logins. 
+AU-2,1  Configure the system per 800-53 Audit Control Requirements.
+AU-2,2  Enable system accounting (Install the sysstat package if needed).
+SC-8,1  Utilize Secure Shell (SSH) for remote logins and file transfers. [i.e., not telnet, ftp, rsh]
+SI-2,1  Apply critical Operating System security patches.
+AC-4,1  Deny all network access to the system via hosts.deny; Explicitly allow network connections, either all services [or] selected ones, from the local network and selected hosts via hosts.allow.
+AC-4,2  Add "nosuid" and "nodev" Option For Removable Media In /etc/fstab.
+AU-9,1  Unless the host is functioning as a syslog server, prevent the system from accepting syslog messages from the network.
+CM-7,1  Set default UMASK for users, directories, and files to meet the needs of the system.
+CM-7,2  Disable Core Dumps.
+CM-7,3  Disable xinetd if none of its services are used.
+CM-7,4  Disable Sendmail.
+CM-7,5  Disable GUI Logon.
+CM-7,6  Disable X-Windows.
+CM-7,7  Disable standard boot services that do not support the role of the system.
+by-hand!CM-7,8  Turn off standard services except those needed for the system's role.
+IA-2,1  Configure the system to use an HHS accepted warning banner.
+IA-5,1  No "+" entries should exist in /etc/passwd or /etc/group.

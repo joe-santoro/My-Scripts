@@ -1,0 +1,43 @@
+#!/bin/bash
+#
+# - - -
+# authority: CIS/7.6
+# authority: CIS5/8.5
+# description: Checks permissions of crontab files
+# - - -
+### TBD: authority HHS/AC-3,5 too, if we also implemented the check for empty files.
+
+### TBD: CIS5 has comment, "What about permissions for the following... including cron.d, cron.daily, cron.hourly..."
+set -e 
+
+. `dirname $0`/../../lib/functions
+
+check()
+{
+    # Anything written to stdout or stderr indicates a compliance problem.
+
+    echo "))= Deviant permissions: Should be root:wheel 0400:"
+
+    # check /bin/chown root:wheel /etc/crontab
+    # check /bin/chmod 400 /etc/crontab
+    if [ -f /etc/crontab ] ; then
+        find /etc/crontab -maxdepth 0 \
+            \( \! -perm 0400 -o \! -user root -o \! -group wheel \) -ls
+    fi
+
+    # check /bin/chgrp -R wheel /var/spool/cron
+    # check /bin/chmod -R go-rwx /var/spool/cron
+    find /usr/lib/cron/tabs \
+        \! -type 'l' \( -perm -0077 -o \! -group wheel \) -ls
+}
+
+case "$1" in 
+    check)
+        check;
+        ;;
+    *)
+        echo "Usage: $0 {check|fix}"
+        ;;
+esac
+exit 0
+

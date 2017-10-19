@@ -1,0 +1,31 @@
+#!/bin/bash
+#
+# - - -
+# authority: Local/6
+# description: Checks that card reader software is installed, configured, and running
+
+set -e
+
+. `dirname $0`/../../lib/functions
+
+check()
+{
+    # Anything written to stdout or stderr indicates a compliance problem.
+
+    piv_dir="/Library/PreferencePanes/NIHAuthPluginPrefPane.prefPane"
+
+    if [ ! -d "${piv_dir}" ] ; then
+        echo "cannot find NIHAuthPluginPrefPane!! Make sure latest PIV plugin software is installed!!"
+    fi
+}
+
+case "$1" in 
+    check)
+        check;
+        ;;
+    *)
+        echo "Usage: $0 {check|fix}"
+        ;;
+esac
+exit 0
+

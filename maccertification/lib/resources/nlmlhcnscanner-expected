@@ -1,0 +1,19 @@
+*** dscl . -read /Users/nlmlhcnscanner
+NFSHomeDirectory: /Users/nlmlhcnscanner
+PrimaryGroupID: 1521
+UniqueID: 1521
+
+*** /etc/sudoers:
+nlmlhcnscanner ALL= NOPASSWD: ALL 
+
+*** /Users/nlmlhcnscanner permissions, owner, group:
+700 1521 1521 /Users/nlmlhcnscanner
+
+*** /Users/nlmlhcnscanner/.ssh:
+700 1521 1521 /Users/nlmlhcnscanner/.ssh
+700 1521 1521 /Users/nlmlhcnscanner/.ssh/authorized_keys
+700 1521 1521 /Users/nlmlhcnscanner/.ssh/known_hosts
+
+*** /Users/nlmlhcnscanner/.ssh/authorized_keys:
+ssh-rsa xxxx nlmlhcnscanner
+

@@ -1,0 +1,34 @@
+#!/bin/bash
+#
+# - - -
+# authority: LHC/1.21
+# description: Checks for rw flag in exports
+# - - -
+set -e 
+
+. `dirname $0`/../../lib/functions
+
+check()
+{
+    # Anything written to stdout or stderr indicates a compliance problem.
+
+    echo "))= Exports should not have the rw flag:"
+    if [ -f /etc/exports ] ; then
+        (egrep -v '^\s*#' /etc/exports | grep rw) || :
+    fi
+}
+
+while [ -n "$1" ] ; do
+    case "$1" in 
+        check)
+            check
+            break
+            ;;
+        *)
+            echo "Usage: $0 {check|fix}"
+            exit 2
+            ;;
+    esac
+done
+exit 0
+

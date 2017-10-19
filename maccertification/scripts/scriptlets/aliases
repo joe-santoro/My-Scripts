@@ -1,0 +1,37 @@
+#!/bin/bash
+#
+# - - -
+# authority: CIS5/SN.2
+# description: Checks aliases file for decode
+# - - -
+set -e
+
+. `dirname $0`/../../lib/functions
+
+check()
+{
+    # Anything written to stdout or stderr indicates a compliance problem.
+
+    # Mac OSX uses postfix for local delivery
+
+    aliases_real=/etc/postfix/aliases
+    aliases_scratch=$(scratchfile $aliases_real)
+
+    sed 's/^decode:/#decode:/' $aliases_real > $aliases_scratch
+
+    report_diff $aliases_real $aliases_scratch
+    echo "))  Remember to run 'newaliases' after changing the aliases file!"
+
+    check_user_group_perms root wheel 0644 $aliases_real
+}
+
+case "$1" in 
+    check)
+        check;
+        ;;
+    *)
+        echo "Usage: $0 {check|fix}"
+        ;;
+esac
+exit 0
+

@@ -1,0 +1,31 @@
+#!/bin/bash
+#
+# - - -
+# authority: CIS5/7.8
+# description: Scans HFS filesystems for unowned files
+# - - -
+set -e
+
+. `dirname $0`/../../lib/functions
+
+check()
+{
+    # Anything written to stdout or stderr indicates a compliance problem.
+
+    echo "))= Unowned files on HFS file systems:"
+    for part in $(mount | awk '$4 ~ /hf/ { print $3 } ') ; 
+      do 
+      find $part -xdev -nouser -o -nogroup -exec ls -lad {} \;
+    done 
+}
+
+case "$1" in 
+    check)
+        check;
+        ;;
+    *)
+        echo "Usage: $0 {check|fix}"
+        ;;
+esac
+exit 0
+

@@ -1,0 +1,40 @@
+#!/bin/bash
+#
+# - - -
+# authority: CIS/7.2
+# authority: CIS5/SN.1
+# description: Checks that evil files are occupied by symlinks
+# - - -
+set -e
+
+. `dirname $0`/../../lib/functions
+
+check()
+{
+    # Anything written to stdout or stderr indicates a compliance problem.
+
+    echo "))= Files that ought to exist as symlinks to /dev/null:"
+
+    for evil in /var/root/.rhosts /var/root/.shosts /etc/hosts.equiv /etc/shosts.equiv 
+      do 
+      if [ -L $evil ] ; then
+          # check with readlink
+          [ `readlink $evil` == "/dev/null" ] || ls -ld $evil
+      elif [ -f $evil ] ; then
+          ls -ld $evil
+      else
+          echo "${evil}: not found"
+      fi
+    done 
+}
+
+case "$1" in 
+    check)
+        check;
+        ;;
+    *)
+        echo "Usage: $0 {check|fix}"
+        ;;
+esac
+exit 0
+

@@ -1,0 +1,333 @@
+# -bash- functions
+
+am_root_or_complain()
+{
+    if [ `id -urn` != 'root' ] ; then
+        echo "I am not root!"
+    fi
+}
+
+mode_owner_group_check()
+{
+    # Check mode:
+    if [ -n "$2" ] ; then
+        find $1 -maxdepth 0 \! -perm $2 -ls
+    fi
+    # Check owner:
+    if [ -n "$3" ] ; then
+        find $1 -maxdepth 0 \! -user $3 -ls
+    fi
+    # Check group:
+    if [ -n "$4" ] ; then
+        find $1 -maxdepth 0 \! -group $4 -ls
+    fi
+}
+
+
+scratchnames_()
+{
+# NOT local: origfile replfile bakfile origdir
+
+# Env var BAKROOT must indicate root of backup-files directory.
+# Env var REPLROOT must indicate root of replacement-file directory.
+if [ \! -d "$BAKROOT" ] ; then
+    echo "BAKROOT must designate a directory (is: $BAKROOT)" >&2
+    exit 2
+fi
+if [ \! -d "$REPLROOT" ] ; then
+    echo "REPLROOT must designate a directory (is: $REPLROOT)" >&2
+    exit 2
+fi
+
+origfile=$1
+
+# Sanity check: original file must be specified:
+if [ -z "$origfile" ] ; then
+    echo Must specify filename >&2
+    exit 2
+fi
+
+# Sanity check: original file must be absolute (starting with virgule):
+if [ "${origfile:0:1}" = "/" ] ; then
+    : # ok
+else
+    echo Original filename must be absolute >&2
+    exit 2
+fi
+
+# Sanity check: original file (if it exists) must be plain, not directory
+if [ -d $origfile ] ; then
+    echo Original filename must not be a directory >&2
+    exit 2
+fi
+
+origdir=$(dirname $origfile)
+bakfile=$BAKROOT$origfile
+replfile=$REPLROOT$origfile
+}
+
+
+# scratch = `scratchfile ORIGFILE`
+scratchfile()
+{
+local origfile replfile bakfile origdir
+
+origfile=$1
+
+scratchnames_ $origfile
+
+# Back up the original file, if it exists and had not already been backed up:
+mkdir -p $BAKROOT$origdir
+if [ -f $origfile -a \! -f $bakfile ] ; then
+    cp -p $origfile $bakfile
+fi
+
+# Establish replacement file, if original exists and replacement does not:
+mkdir -p $REPLROOT$origdir
+if [ -f $origfile -a \! -f $replfile ] ; then
+    cp -p $origfile $replfile
+    # A scratch file is no good if I can't write it:
+    # (but root can write anything) 
+    #chmod u+w $replfile
+fi
+
+# Return replacement file name:
+echo $replfile
+}
+
+
+grep_positive() 
+{
+    if [ "`grep -c \"$1\" $2`" = "0" ] ; then 
+        echo "$2 does not contain $1"
+        return 2
+    fi 
+    return 0
+}
+
+
+user_home_dirs()
+{
+    awk -F: '($3 >= 500) && ($7 !~ /nologin/) { print $6 }' /etc/passwd
+}
+
+
+suggest_umask_027()
+{
+    local FILE_real FILE_scratch FILE_lastumask
+
+    # umask 027 is recommended by CIS5
+    FILE_real=$1
+    FILE_scratch=$(scratchfile $FILE_real)
+
+    # The CIS hardening script *appends* a stern umask.
+    # Therefore, the subject file typically has two umask statements.
+    # Dengfeng suggests: judge compliance by looking at the last umask only.
+    FILE_lastumask=${FILE_scratch}.lastumask
+    grep -v '^ *#' ${FILE_real} 2> /dev/null | grep umask | tail -1 >${FILE_lastumask} 
+    
+    if  egrep -q 'umask *0[2367]7' ${FILE_lastumask}  ; then
+       rm ${FILE_lastumask}
+       : # good
+    else
+      rm ${FILE_lastumask}
+      # Try to compose a "fixed" file.
+      # The key thing is to disallow group write
+      # and disallow other everything.
+      sed -e 's/^ *umask \{1,\}[0-9][01][0-9]/umask 027/' \
+          -e 's/^ *umask \{1,\}[0-9][45][0-9]/umask 077/' \
+          -e 's/^ *umask \{1,\}[0-9]\([2367]\)[0-9]/umask 0\17/' \
+          $FILE_real > $FILE_scratch 2> /dev/null
+      # Perhaps there was no umask line to modify: add one.
+      if  diff -bq $FILE_real $FILE_scratch  ; then
+        echo '' >> $FILE_scratch
+        echo 'umask 027' >> $FILE_scratch
+      fi
+
+      echo "))= Deviant (<) and expected (>) contents of ${FILE_real}:"
+      diff -b $FILE_real $FILE_scratch || :
+      echo "))  A modified file for your review is at ${FILE_scratch}."
+    fi
+}
+
+
+report_diff()
+{
+    local tool diffopts real scratch
+
+    tool=
+    diffopts=
+    while [ 1 ] ; do
+        case $1 in
+           --use-diff) tool=diff; shift;;
+           --use-sdiff) tool=sdiff; shift;;
+           -*) diffopts="$diffopts $1"; shift;;
+           *) break ;;
+        esac
+    done
+
+    real=$1
+    scratch=$2
+
+    # diff_type=
+    # diff_orig_sym='<'
+    # diff_proposed_sym='>'
+
+    diff_type=--context
+    diff_orig_sym='***'
+    diff_proposed_sym='---'
+
+    if [ -f $real ] ; then
+        # Choose a comparison tool: sdiff for short files:
+        if [ -z "$tool" ] ; then
+            if [ `wc -l < $real` -ge 50 ] ; then
+                tool=diff
+            else
+                tool=sdiff
+            fi
+        fi
+
+        if [ "$tool" == "diff" ] ; then
+            echo "))= Deviant ($diff_orig_sym) and expected ($diff_proposed_sym) contents of ${real}, compared by 'diff':"
+            diff $diff_type $diffopts -B -b $real $scratch || :
+        else
+            echo "))= Deviant (<) and expected (>) contents of ${real}, compared by 'sdiff' (note: the sdiff report truncates long lines):"
+            # sdiff outputs always. Do plain diff first to see if necessary:
+            if ( diff -q $diffopts -B -b $real $scratch >/dev/null ) ; then
+                :
+            else
+                sdiff $diffopts -B -b -s -w 120 $real $scratch || :
+            fi
+        fi
+        echo "))  A modified file for your review is at ${scratch}."
+    else
+        echo "))= File $real does not exist. Suggestion:"
+        cat $scratch
+        echo "))  The suggested file for your review is at ${scratch}."
+    fi
+}
+
+check_user_group_perms()
+{
+    local user group mode file replfile bakfile origdir
+
+    user=$1
+    group=$2
+    mode=$3
+    file=$4
+
+    if [ -f $file ] ; then
+        echo "))= Deviant permissions: Should be ${user}:${group} ${mode}:"
+        badmodebits=$(printf "%04o" $(( 07777 - $mode )) )
+        find $file -maxdepth 0 -follow \
+            \( -perm +$badmodebits -o \! -user $user -o \! -group $group \) -ls
+    fi
+
+    # If there is a proposed replacement for the file, set its perms:
+    scratchnames_ $file
+    if [ -f $replfile ] ; then
+       chown ${user}:${group} $replfile
+       chmod $mode $replfile
+    fi
+}
+
+### linux only
+###check_service_now()
+###{
+###    local svcname
+###    svcname=$1
+###    ## See http://refspecs.freestandards.org/LSB_3.1.1/LSB-Core-generic/LSB-Core-generic/iniscrptact.html
+###    if ! /sbin/service $svcname status >/dev/null 2>&1 ; then
+###        echo "))= Service $svcname is not running or not happy"
+###        /sbin/service $svcname status || :
+###    fi
+###}
+###
+#### Verifies that the service is "on" for runlevels 3 and 5.
+#### Does not verify whether the other runlevels are on or off.
+###check_service_later()
+###{
+###    local svcname
+###    svcname=$1
+###    # we dont use the guess_RH here 
+###    if [ -z "$RH" ] ; then
+###        guess_RH_version
+###    fi
+###    # RH6 and below we use chkconfig
+###    if [ "$RH" -le 6 ] ; then
+###        if  /sbin/chkconfig --list $svcname >/dev/null 2>&1  ; then
+###            if ! /sbin/chkconfig --list $svcname | /bin/grep -q '3:on.*5:on' ; then
+###                echo "$svcname is not chkconfig'd for runlevels 3 and 5"
+###                /sbin/chkconfig --list $svcname 2>/dev/null || :
+###            fi
+###        else
+###            echo "$svcname is not chkconfig'd:"
+###                /sbin/chkconfig --list $svcname 2>/dev/null || :
+###        fi
+###    # RH7 we check systemctl status
+###    #else 
+###    #    if ! /bin/systemctl status ${svcname}.service | /bin/grep 'Active: *active' &> /dev/null ; then
+###    #    	echo "$svcname is not enabled by sytemctl"
+###	#    fi
+###    #fi
+###
+###   # RH7 we check systemctl status
+###
+###   else
+###    # first we see if the svc happens to be an old-style init script, if so we perform a RH6 style check..
+###        if [ -f "/etc/init.d/$svcname" ] ; then
+###            if  /sbin/chkconfig --list $svcname >/dev/null 2>&1  ; then
+###                if ! /sbin/chkconfig --list $svcname 2>/dev/null | /bin/grep -q '3:on.*5:on' ; then
+###                    echo "$svcname is not chkconfig'd for runlevels 3 and 5"
+###                    /sbin/chkconfig --list $svcname 2>/dev/null || :
+###                fi
+###           else
+###                echo "$svcname is not chkconfig'd:"
+###                /sbin/chkconfig --list $svcname 2>/dev/null || :
+###           fi
+###     # else we perform a check using systemctl
+###        else
+###            if ! /bin/systemctl status ${svcname}.service | /bin/grep -q 'Active: *active' &> /dev/null ; then
+###                echo "$svcname is not enabled by sytemctl"
+###            fi
+###        fi
+###    fi
+###}
+
+# linux only
+#check_service()
+#{
+#    local svcname
+#    svcname=$1
+#
+#    check_service_now $svcname
+#    check_service_later $svcname
+#}
+#
+# linux only
+#check_package()
+#{
+#    local pkgname
+#    pkgname=$1
+#
+#    if !  /bin/rpm -q $pkgname >/dev/null  ; then
+#        /bin/rpm -q $pkgname || :
+#    fi
+#}
+
+service_accounts()
+{
+    if [ -z "$uid_threshold" ] ; then
+        uid_threshold=500
+    fi
+    awk -F : "(\$3 < $uid_threshold) { print \$1 }" /etc/passwd
+}
+
+local_nonservice_accounts()
+{
+    if [ -z "$uid_threshold" ] ; then
+        uid_threshold=500
+    fi
+    grep -v ^+ /etc/passwd | awk -F : "(\$3 >= $uid_threshold) { print \$1 }"
+}
+

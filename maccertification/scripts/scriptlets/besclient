@@ -1,0 +1,42 @@
+#!/bin/bash
+#
+# - - -
+# authority: CIS/1.1
+# authority: CIS5/2.1
+# authority: HHS/SI-2,1
+# authority: Local/3
+# description: Verifies BESClient is installed and enabled
+# - - -
+set -e 
+
+. `dirname $0`/../../lib/functions
+
+check()
+{
+    # Anything written to stdout or stderr indicates a compliance problem.
+		
+    if [ ! -f "/Library/BESAgent/BESAgent.app/Contents/MacOS/BESAgent" ] ; then
+	    echo "BESClient is not installed (agent files do not exist)"
+    else
+        :
+#	    echo "BESClient is installed correctly"
+    fi
+    launchctl list | grep -q com.bigfix.BESAgent
+    if [ "$?" -ne "0" ] ; then
+	    echo "BESClient is not installed correctly (not listed in launchctl)"
+    else
+        :
+#        echo "BESClient is listed in launchctl correctly"
+    fi
+}
+
+case "$1" in 
+    check)
+        check;
+        ;;
+    *)
+        echo "Usage: $0 {check|fix}"
+        ;;
+esac
+exit 0
+

@@ -1,0 +1,46 @@
+#!/bin/bash
+#
+# - - -
+# authority: CIS/8.8
+# authority: CIS5/9.7
+# description: Finds group- or world-writable dot files in user home directories
+# option: uid_threshold Lowest UID of a normal (non-system) user
+# - - -
+set -e
+
+. `dirname $0`/../../lib/functions
+
+# Default option values:
+if [ -z "$uid_threshold" ] ; then
+    uid_threshold=500
+fi
+
+check()
+{
+    # Anything written to stdout or stderr indicates a compliance problem.
+
+    echo "))= Deviant permissions of dot files in users' home directory: Should not allow group or other write:"
+    for user in $(dscl . list /Users) ; do
+        uid=$(dscl . -read /Users/$user | awk '/UniqueID/ { print $2 }')
+        dir=$(dscl . -read /Users/$user | awk '/^NFSHomeDirectory/ { print $2 }')
+#        echo "$user [$uid] [$dir]"
+        if [ $uid -gt $uid_threshold ] && [[ "$dir" =~ ^/Users ]] ; then
+            find $dir -mindepth 1 -maxdepth 1  -name '.*' -type f  -perm -022  -ls
+        fi
+    done 
+}
+
+while [ -n "$1" ] ; do
+    case "$1" in 
+        check)
+            check
+            break
+            ;;
+        *)
+            echo "Usage: $0 {check|fix}"
+            exit 2
+            ;;
+    esac
+done
+exit 0
+

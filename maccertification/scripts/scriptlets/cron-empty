@@ -1,0 +1,35 @@
+#!/bin/bash
+#
+# - - -
+# authority: HHS/AC-3,5
+# description: Checks for crontab files that have no commands
+# - - -
+set -e 
+
+. `dirname $0`/../../lib/functions
+
+check()
+{
+    # Anything written to stdout or stderr indicates a compliance problem.
+
+    for cronfile in $(find /usr/lib/cron/tabs/ -mindepth 1 -maxdepth 1) ; do
+        if [ "0" == "$(egrep -v '^\s*#' $cronfile | egrep -v '^\s*$' | egrep -v -c '^\s*[a-zA-Z_0-9]+\s*=')" ] ; then
+            echo "Empty crontab file: $cronfile"
+        fi
+    done
+}
+
+while [ -n "$1" ] ; do
+    case "$1" in 
+        check)
+            check
+            break
+            ;;
+        *)
+            echo "Usage: $0 {check|fix}"
+            exit 2
+            ;;
+    esac
+done
+exit 0
+

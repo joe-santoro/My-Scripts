@@ -1,0 +1,29 @@
+#!/bin/sh
+#
+# Backup MacOS config files
+#
+
+PATH=$PATH:/bin:/usr/bin:/sbin:/usr/sbin
+
+echo "Start backing up the configuration files."
+
+ext=`date '+%Y%m%d-%H:%M:%S'`
+
+for file in /etc/inetd.conf /etc/hosts.equiv \
+	/etc/ftpusers /etc/passwd /etc/shadow /etc/hosts.allow /etc/hosts.deny  \
+	/etc/exports /etc/syslog.conf /etc/asl.conf  \
+	/etc/fstab /root/.rhosts /root/.shosts /etc/shosts.equiv \
+	/usr/lib/cron/cron.allow /usr/lib/cron.deny /usr/lib/cron/at.allow \
+	/usr/lib/cron/at.deny /etc/motd /etc/issue \
+	/etc/group /etc/profile /etc/csh.login /etc/csh.cshrc /etc/bashrc \
+	/etc/ssh/sshd_config /etc/ssh/ssh_config \
+	/etc/cups/cupsd.conf /var/root/.bashrc /var/root/.bash_profile \
+	/var/root/.cshrc /var/root/.tcshrc /etc/vsftpd.ftpusers \
+	/etc/pam.d/system-auth /etc/aliases /etc/postfix/main.cf /etc/postfix/master.cf
+do 
+   [ -f $file ] && /bin/cp $file $file-preCIS-$ext 
+done 
+
+echo "Completed to back up the configuration files"
+echo "Press ENTER to continue"
+read console_in_tmp

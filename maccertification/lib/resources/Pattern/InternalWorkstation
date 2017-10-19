@@ -1,0 +1,76 @@
+## Pattern for "internal workstations".
+## InternalWorkstation is a relaxed variant of the "PublicServer" pattern:
+
+## The pattern consists of
+##  (2) requirements that must be satisfied, 
+##      in the form of references to authority documents;
+##  (1) exceptions, i.e., requirements that need not be satisfied.
+##    (a) requirements to waive altogether
+##    (b) scriptlets to skip
+
+## The exceptions must precede the requirements.
+
+
+# Per LHC/3.3.1:
+waive CIS/3.4
+waive CIS5/4.4
+waive HHS/CM-7,5
+waive HHS/CM-7,6
+waive LHC/1.25
+
+# Per LHC/3.3.2:
+waive CIS/3.5
+waive CIS5/4.5
+
+# Per LHC/3.3.3:
+skip services-off-smb
+
+# Per LHC/3.3.4:
+skip services-off-nfs
+
+# Per LHC/3.3.5:
+skip services-off-nfslock
+skip services-off-autofs
+
+# Per LHC/3.3.6:
+skip services-off-ypbind
+
+# Allow compilers:
+waive CIS5/SN.10
+waive LHC/1.48
+
+# Allow removable filesystems
+waive CIS5/7.3
+
+# Allow USB devices
+### Note: The requirement is also waived, for maybe different reasons,
+### for public servers. If the requirement were to be enforced for
+### internal workstations, must replace the "waive" with an explicit
+### preemptory "require" statement!
+waive CIS5/7.9
+
+# Allow rw NFS exports
+waive LHC/1.21
+
+# Allow NIS on internal workstations:
+waive Local/1
+
+# Allow printing:
+skip services-off-cups
+
+# Allow core dumps (because they not a matter of security)
+waive HHS/CM-7,2
+waive CIS5/9.10
+
+# Require Azeti nagios agent (if the computer is in "the computer room")
+#waive Local/7
+
+# PIV reader software currently NOT deployed on any Linux machines - waive check Local/6 (scriptlets/pivcardreader)
+# PublicServer also waives this check
+waive Local/6
+
+#
+# Now the requirements:
+#
+include PublicServer
+

@@ -1,0 +1,16 @@
+function service
+{
+    svc=$1
+    status=$2
+
+    if [ -z "$svc" ] || [ -z "$status" ] || [[ "$status" != "on" && "$status" != "off" ]] ; then
+        echo "usage: service service-name on|off"
+        return 1
+    fi
+
+    [ "$status" = "on" ] && status="enable"
+    [ "$status" = "off" ] && status="disable"
+
+    launchctl $status $svc
+    launchctl start $svc
+}

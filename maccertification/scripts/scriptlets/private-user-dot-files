@@ -1,0 +1,41 @@
+#!/bin/bash
+#
+# - - -
+# authority: LHC/1.37
+# description: Checks certain well-known dot files in user directories
+# - - -
+set -e
+
+. `dirname $0`/../../lib/functions
+
+check()
+{
+    # Anything written to stdout or stderr indicates a compliance problem.
+
+    # .history is read by tcsh.
+    # .bash_history is read by bash (overridden by HISTFILE)
+    echo "))= Deviant permissions: History files hould not allow group or other read/write/execute:"
+    for user in $(dscl . list /Users) ; do
+#        uid=$(dscl . -read /Users/$user | awk '/UniqueID/ { print $2 }')
+        dir=$(dscl . -read /Users/$user | awk '/^NFSHomeDirectory/ { print $2 }')
+#        echo "$user [$uid] [$dir]"
+        if [[ "$dir" =~ ^/Users ]] ; then
+            find $dir -mindepth 1 -maxdepth 1 \( -name .history -o -name .bash_history \) -type f -perm -077 -ls
+        fi
+    done 
+}
+
+while [ -n "$1" ] ; do
+    case "$1" in 
+        check)
+            check
+            break
+            ;;
+        *)
+            echo "Usage: $0 {check|fix}"
+            exit 2
+            ;;
+    esac
+done
+exit 0
+

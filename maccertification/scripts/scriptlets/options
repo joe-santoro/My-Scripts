@@ -1,0 +1,14 @@
+#!/bin/bash
+#
+# - - -
+# authority: CIS/8.3
+# authority: CIS5/9.3
+# authority: HHS/AC-3,2
+# description: Checks account expiration
+# option: uid_threshold Lowest UID of a normal (non-system) user
+# option: pass_max_days PASS_MAX_DAYS value for login.defs
+# option: pass_min_days PASS_MIN_DAYS value for login.defs
+# option: pass_min_len PASS_MIN_LEN value for login.defs
+# option: pass_warn_age PASS_WARN_AGE value for login.defs
+
+exit 0

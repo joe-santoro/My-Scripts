@@ -1,0 +1,72 @@
+#!/bin/bash
+#
+# - - -
+# authority: HHS/AC-8,1
+# authority: HHS/IA-2,1
+# authority: CIS/7.7
+# authority: CIS5/10.1
+# description: Checks /etc/issue.netf for boilerplate, Checks the MacOS Banner file in /Library/Security/PolicyBanner.rtf
+# - - -
+set -e
+
+. `dirname $0`/../../lib/functions
+
+check()
+{
+    # Anything written to stdout or stderr indicates a compliance problem.
+
+    issue_real=/etc/issue.net
+    issue_scratch=$(scratchfile $issue_real)
+    cat >$issue_scratch <<EOF
+#####################################################################################################
+#                      ***WARNING***                                                                #
+# * This warning banner provides privacy and security notices consistent with applicable federal    #
+#   laws, directives,and other federal guidance for accessing this Government system,               #
+#   which includes                                                                                  #
+#     (1) this computer network,                                                                    #
+#     (2) all computers connected to this network, and                                              #
+#     (3) all devices and storage media attached to this network or to a computer on this network.  #
+# * This system is provided for Government-authorized use only.                                     #
+# * Unauthorized or improper use of this system is prohibited and may result in disciplinary        #
+#   action and/or civil and criminal penalties.                                                     #
+# * Personal use of social media and networking sites on this system is limited as to not           #
+#   interfere with official work duties and is subject to monitoring.                               #
+# * By using this system, you understand and consent to the following:                              #
+# * The Government may monitor, record, and audit your system usage, including usage of             #
+#   personal devices and email systems for official duties or to conduct HHS business.              #
+#   Therefore, you have no reasonable expectation of privacy regarding any communication or         #
+#   data transiting or stored on this system.                                                       #
+#   At any time, and for any lawful Government purpose, the government may monitor, intercept,      #
+#   and search and seize any communication or data transiting or stored on this system.             #
+# * Any communication or data transiting or stored on this system may be disclosed or used          #
+#   for any lawful Government purpose.                                                              #
+#####################################################################################################
+EOF
+
+    report_diff $issue_real $issue_scratch
+
+    check_user_group_perms root wheel 0644 $issue_real
+
+    if [ ! -f "/Library/Security/PolicyBanner.rtf" ] ; then
+        echo "The PolicyBanner.rtf file is MISSING!!!"
+        echo " /Library/Security/PolicyBanner.rtf"
+    else
+        hash=$(md5  /Library/Security/PolicyBanner.rtf | awk '{ print $4 }' )
+        if [[ "$hash" != "415814db2064f9d59cc1985349433dd6" ]] ; then
+            echo "The checksum on the PolicyBanner.rtf file is WRONG!!!"
+            echo " /Library/Security/PolicyBanner.rtf"
+        fi
+    fi
+
+}
+
+case "$1" in 
+    check)
+        check;
+        ;;
+    *)
+        echo "Usage: $0 {check|fix}"
+        ;;
+esac
+exit 0
+

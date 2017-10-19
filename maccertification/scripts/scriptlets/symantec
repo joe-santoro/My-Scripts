@@ -1,0 +1,42 @@
+#!/bin/bash
+#
+# - - -
+# authority: CIS/1.1
+# authority: CIS5/2.1
+# authority: HHS/SI-2,1
+# authority: Local/3
+# description: Verifies Symantec client is installed and enabled
+# - - -
+#set -e 
+
+. `dirname $0`/../../lib/functions
+
+check()
+{
+    # Anything written to stdout or stderr indicates a compliance problem.
+		
+    if [ ! -x "/Library/Application Support/Symantec/Silo/NFM/Daemon/SymDaemon.bundle/Contents/MacOS/SymDaemon" ] &&  
+       [ ! -x "/Library/Application Support/Symantec/Daemon/SymDaemon.bundle/Contents/MacOS/SymDaemon" ] ; then
+	    echo "Symantec Endpoint Protection is not installed (SymDaemon not found)"
+#    else
+#        :
+#	    echo "Symantec Endpoint Protection is installed correctly"
+    fi
+    pid=$(pgrep SymDaemon)
+    if [ -z "$pid" ] ; then
+        echo "Symantec Endpoint Protection not running (SymDaemon process not found)"
+#    else
+#        :
+    fi
+}
+
+case "$1" in 
+    check)
+        check;
+        ;;
+    *)
+        echo "Usage: $0 {check|fix}"
+        ;;
+esac
+exit 0
+

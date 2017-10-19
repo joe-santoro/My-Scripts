@@ -1,0 +1,31 @@
+#!/bin/bash
+#
+# - - -
+# authority: CIS/6.4
+# authority: CIS5/7.4
+# description: Confirms permissions on passwd, shadow, and group files
+# - - -
+set -e
+
+. `dirname $0`/../../lib/functions
+
+check()
+{
+    # Anything written to stdout or stderr indicates a compliance problem.
+
+    check_user_group_perms root wheel 0644 /etc/passwd
+
+    check_user_group_perms root wheel 0644 /etc/group
+
+}
+
+case "$1" in 
+    check)
+        check;
+        ;;
+    *)
+        echo "Usage: $0 {check|fix}"
+        ;;
+esac
+exit 0
+

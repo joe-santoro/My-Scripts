@@ -1,0 +1,30 @@
+Scripts may write to stdout and/or stderr, it makes no difference.
+
+Common "if" condition idioms:
+
+A file exists and does not contain a pattern.
+  [ "`grep -c ^+: /etc/group`" = "0" ]
+
+Two files are equal.
+  diff -b  FILE_A  FILE_B
+
+A service is turned on via launchd/launchctl:
+    if launchctl list com.apple.sysmond &> /dev/null 
+
+
+User home directories:
+  awk -F: '($3 >= 500) && ($7 !~ /nologin/) { print $6 }' /etc/passwd
+  (The user number suffices for everyone except nfsnobody and csvn.)
+
+
+Check existence, owner, group, mode:
+    find /usr/lib/cron/tabs/root -maxdepth 1 \
+        \( \! -perm 400 -o \! -user root -o \! -group wheel \) -ls
+
+Check that grep finds at least one matching line:
+    grep_positive '@lhcsyslog.nlm.nih.gov' /etc/syslog.conf
+
+    --user_home_perm=*)
+        user_home_perm=`expr "$1" : '[^=]*=\(.*\)'`
+        shift
+        ;;

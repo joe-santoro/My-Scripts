@@ -1,0 +1,55 @@
+#!/bin/bash
+#
+# - - -
+# authority: HHS/AC-4,1
+# authority: CIS5/3.2a
+# authority: LHC/1.46a
+# authority: LHC/1.46b
+# authority: LHC/1.22a
+# description: Checks for disallowed :ALL in hosts.allow
+# - - -
+set -e
+
+. `dirname $0`/../../lib/functions
+
+check()
+{
+    # Anything written to stdout or stderr indicates a compliance problem.
+
+    hosts_allow_real=/etc/hosts.allow
+    hosts_allow_scratch=$(scratchfile $hosts_allow_real)
+
+    # Do not recommend any specific contents of hosts.allow:
+    #printf "ALL: localhost" > $hosts_allow_scratch
+    #echo  >> $hosts_allow_scratch
+    #report_diff $hosts_allow_real $hosts_allow_scratch
+
+    check_user_group_perms root wheel 0644 $hosts_allow_real
+
+    # TBD: The CIS5 does not recommend how to harden IPv6; it says how to turn off IPv6!
+    # TBD: Although CIS5 encourages using a firewall, it does not prescribe any.
+
+    # Check hosts.allow, if it exists, for ALL:ALL and flag as error.
+    if [ -f $hosts_allow_real ] ; then
+        grep -Hi 'ALL:ALL' $hosts_allow_real || :
+        echo "))  Red flag found (ALL:ALL in ${hosts_allow_real})"
+    fi
+
+    # It is an error if hosts.allow does not exist.
+    if [ ! -f $hosts_allow_real ] ; then
+        echo "))=  /etc/hosts.allow must exist"
+        ls -l ${hosts_allow_real}
+    fi
+
+}
+
+case "$1" in 
+    check)
+        check;
+        ;;
+    *)
+        echo "Usage: $0 {check|fix}"
+        ;;
+esac
+exit 0
+

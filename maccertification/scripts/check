@@ -1,0 +1,6 @@
+#!/bin/bash
+
+dir=$(dirname $0)
+script="check.pl"
+
+$dir/$script $*

@@ -1,0 +1,48 @@
+#!/bin/bash
+#
+# - - -
+# authority: HHS/AC-2,3
+# authority: CIS/8.9
+# authority: CIS5/9.8
+# authority: LHC/1.38
+# description: Detects evil .netrc in any user's home directory
+# option: uid_threshold Lowest UID of a normal (non-system) user
+# - - -
+set -e
+
+. `dirname $0`/../../lib/functions
+
+# Default option values:
+if [ -z "$uid_threshold" ] ; then
+    uid_threshold=500
+fi
+
+
+check()
+{
+    # Anything written to stdout or stderr indicates a compliance problem.
+
+    echo "))= Red flag found (.netrc file):"
+
+    # Note: CIS recommended looking in user home directories;
+    # CIS5 recommends looking throughout the whole file system.
+
+    # Searching /sys, /proc, /dev sometimes runs into troubles.
+    # Searching network drives is a bottomless hole.
+    find -H / \( \( -fstype nfs -o -fstype autofs -o -fstype proc -o -fstype devfs -o -fstype smbfs \) -prune \) -o \( -type f -name .netrc -ls \)
+}
+
+while [ -n "$1" ] ; do
+    case "$1" in 
+        check)
+            check
+            break
+            ;;
+        *)
+            echo "Usage: $0 {check|fix}"
+            exit 2
+            ;;
+    esac
+done
+exit 0
+

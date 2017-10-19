@@ -1,0 +1,40 @@
+#!/bin/bash
+#
+# - - -
+# authority: HHS/AC-2,6
+# authority: CIS/8.5
+# authority: CIS5/SN.11
+# description: Spots users other than root with UID 0
+# - - -
+set -e
+
+. `dirname $0`/../../lib/functions
+
+check()
+{
+    # Anything written to stdout or stderr indicates a compliance problem.
+
+    echo "))= Red flag found (user 0, other than root, in /etc/passwd):"
+    cut -d : -f 1,3 /etc/passwd | grep :0 | grep -v '^root:' || :
+    echo "))= Red flag found (user 0, other than root, in opendirectory):"
+    for user in $(dscl . list /Users) ; do 
+       id="$(dscl . -read /Users/$user | egrep '^UniqueID' | awk '{ print $2 }')"
+       if [ "0" = "$id" ] ; then
+            if [ "$user" != "root" ] ; then
+                echo "User '$user' has UniqueID 0 in OpenDirectory !"
+            fi
+       fi
+    done
+
+}
+
+case "$1" in 
+    check)
+        check;
+        ;;
+    *)
+        echo "Usage: $0 {check|fix}"
+        ;;
+esac
+exit 0
+

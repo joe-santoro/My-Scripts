@@ -1,0 +1,9 @@
+# CTInternalWorkstation is a variant of the "InternalWorkstation" pattern:
+
+# Require SecurID:
+LHC/1.49
+
+option user_home_perm_prohibit=022
+option cron_allow_users=csadmin
+
+include InternalWorkstation

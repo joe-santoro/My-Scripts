@@ -1,0 +1,57 @@
+#!/bin/bash
+#
+# - - -
+# authority: HHS/AC-4,1
+# authority: CIS5/3.2a
+# authority: LHC/1.46b
+# authority: LHC/1.22a
+# description: Checks ALL:ALL in hosts.deny
+# - - -
+set -e
+
+. `dirname $0`/../../lib/functions
+
+check()
+{
+    # Anything written to stdout or stderr indicates a compliance problem.
+
+    hosts_deny_real=/etc/hosts.deny
+    hosts_deny_scratch=$(scratchfile $hosts_deny_real)
+
+    # Copy all comments from hosts.deny. Then add ALL:ALL.
+    # Then sort both hosts.deny and the ALL:ALL file.
+    # They should at that point be equal.  If not, complain.
+
+    if [ -f $hosts_deny_real ] ; then
+        touch ${hosts_deny_scratch}..tmp
+        grep '^ *#' $hosts_deny_real >>${hosts_deny_scratch}..tmp || :
+        echo ALL:ALL >>${hosts_deny_scratch}..tmp
+        sort ${hosts_deny_scratch}..tmp >${hosts_deny_scratch}
+        rm ${hosts_deny_scratch}..tmp
+
+        sort $hosts_deny_real >/tmp/hosts.allow..tmp
+
+        if diff -q -B -b /tmp/hosts.allow..tmp ${hosts_deny_scratch} 2>/dev/null ; then
+            :
+        else
+            echo ALL:ALL >${hosts_deny_scratch}
+            report_diff $hosts_deny_real $hosts_deny_scratch
+        fi
+    else
+        echo ALL:ALL >${hosts_deny_scratch}
+        report_diff $hosts_deny_real $hosts_deny_scratch
+    fi
+
+    check_user_group_perms root wheel 0644 $hosts_deny_real
+}
+
+case "$1" in 
+    check)
+        check;
+        ;;
+    *)
+        echo "Usage: $0 {check|fix}"
+        ;;
+esac
+exit 0
+

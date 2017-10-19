@@ -1,0 +1,139 @@
+#!/bin/sh
+PATH=$PATH:/bin:/usr/bin:/sbin:/usr/sbin
+
+# UPDATED PUBKEY on 10/11/2016 --newmanjn
+#
+# this is currently how tenable / nessus scans all Linux and Mac machines - using the private key that corresponds with this public key
+# note that this also requires the sudoers entry for nlmlhcnscanner to look like: 
+#   nlmlhcnscanner   ALL= NOPASSWD: ALL
+# because we will be locking the hash
+
+# Public key obfuscated (JSS)
+declare -r PUBKEY="ssh-rsa xxxx nlmlhcnscanner"
+
+#Non-system dependant variables
+declare -r USER="nlmlhcnscanner"
+declare -r USERID=1521
+
+declare -r SUDOERS=/etc/sudoers
+declare -r PASSFILE=/etc/passwd
+declare -r HOME=/Users/$USER
+declare -r SHELL=/bin/bash
+
+#pwd > $HOME_DIR
+#echo $HOME_DIR
+automatic=$1
+options=$2
+menu1=0; menu2=0;
+flag1=0; flag2=0;
+if test "$automatic" = "1"
+then
+    menu1=1;menu2=1;echo menu1=$menu1,menu2=$menu2;
+    echo options=$options
+fi
+until test "$console_in" = "0"
+do
+    #################### Main Menu ##########################
+    #clear
+    echo "        CIS MACOS Benchmark v2.0"
+    echo "              Section 7 Menu"
+    echo 
+    if test "$menu1" = 1
+    then
+        echo "_X_ (1) 7.1 Create NLM LHC Network Scanner Account"
+    else
+        echo "___ (1) 7.1 Create NLM LHC Network Scanner Account"
+    fi
+    if test "$menu2" = 1
+    then
+        echo "_X_ (2) 7.2 Configure NLM LHC Network Scanner Account"
+    else
+        echo "___ (2) 7.2 Configure NLM LHC Network Scanner Account"
+    fi
+    echo "(0) Back to Main Menu"
+    echo " Selection => "
+   
+    if test "$automatic" = "1"
+	then
+	    echo "automatic opted"
+    else
+    	read console_in
+    fi
+    if ((test "$console_in" = "1" || test "$menu1" = "1" ) && ( test "$flag1" != "1") )
+    then
+
+        echo "We'll first create the NLM LHC Network Scanner account (nlmlhcnscanner) ..."
+
+        if dscl . -read /Users/$USER >> /tmp/nlmlhcnscanner.txt 2> /dev/null ; then
+            echo "!!! $USER already exists!"
+#            exit 1
+        elif dscacheutil -q user | grep ^uid | awk '{print $2 }' | grep  -q "^1521$" ; then 
+      	    echo "!!! $USER does not exist, but $USERID exists!  Script aborted!"
+            exit 1
+        else
+            dscl . -create /Groups/$USER PrimaryGroupID $USERID
+            dscl . -create /Users/$USER
+            dscl . -create /Users/$USER UserShell $SHELL
+            dscl . -create /Users/$USER RealName "NLM LHC NSCANNER, CR"
+            dscl . -create /Users/$USER UniqueID $USERID
+            dscl . -create /Users/$USER PrimaryGroupID $USERID
+            dscl . -create /Users/$USER NFSHomeDirectory /Users/$USER
+#            dscl . -passwd /Users/$USER password
+
+            dscl . -append /Groups/admin GroupMembership $USER
+	    fi
+        echo "Press RETURN to continue....."
+        if test "$automatic" != "1"	
+        then
+	        read console_in_temp_2
+        fi
+        echo "Section 7.1 completed."
+        menu1=1
+	    flag1=1
+    fi
+
+    if ((test "$console_in" = "2" || test "$menu2" = "1") && ( test "$flag2" != "1") )
+    then
+        echo "Next we'll configure the NLM LHC Network Scanner account (nlmlhcnscanner) ..."
+        echo "* Entering SSH configuration..." 
+
+        # create home directory and SSH key
+        if [ ! -d $HOME/.ssh ]
+        then
+      	    mkdir -p $HOME/.ssh
+            [ $? -eq 0 ] && echo "Created SSH directory for $USER" || echo "!!! Failed to create SSH directory for $USER!"
+        fi
+        # Ensure proper permissions on files/directories
+        chown -R $USER:$USER $HOME && chmod -R 700 $HOME 
+#        [ $? -eq 0 ] && echo "Set ownership on $HOME for $USER" || echo "!!! Failed to set ownership on $HOME for $USER" 
+#        chmod o+x /export && chmod o+x /export/home 
+#        [ $? -eq 0 ] && echo "Set permissions for /export/home" || echo "!!! Failed to set permissions for /export/home" 
+        # Overwrite $HOME/.ssh/authorized_keys
+        echo $PUBKEY > $HOME/.ssh/authorized_keys && chown -R $USER:$USER $HOME && chmod -R 700 $HOME
+        [ $? -eq 0 ] && echo "Modified authorized_keys for $USER" || echo "!!! Failed to modify authorized_keys for $USER"
+
+        echo "* Entering SUDO configuration..." 
+        if [ -f $SUDOERS ]; then
+      	    # check if $USER already exists
+            egrep "$USER.*ALL" $SUDOERS >> /dev/null
+            if [ $? -eq 0 ]; then
+                # Clean up sudoers file
+                sed -i'.preCIS' "/^$USER/d" $SUDOERS
+                [ $? -eq 0 ] && echo "Removed instance(s) of $USER from $SUDOERS" || $ECHO "!!! Failed to remove instance(s) of $USER from $SUDOERS!"
+            fi
+            # Modify sudoers file, adding $USER
+            echo "$USER   ALL= NOPASSWD: ALL" >> $SUDOERS
+            [ $? -eq 0 ] && echo "Modified $SUDOERS for $USER" || echo "!!! Failed to modify $SUDOERS for $USER"
+        else
+  	        echo "!!! $SUDOERS does not exist"
+        fi
+
+        echo "Section 7.2 completed."
+        menu2=1
+        flag2=1
+    fi
+    if test "$automatic" = "1" 
+    then
+        console_in=0
+    fi
+done

@@ -1,0 +1,35 @@
+#!/bin/bash
+#
+# - - -
+# authority: Local/4
+# description: Checks that syslog will run automatically
+
+set -e
+
+. `dirname $0`/../../lib/functions
+
+check()
+{
+    # Anything written to stdout or stderr indicates a compliance problem.
+
+    SYSLOG=syslog
+
+    echo "))= $SYSLOG service is not set to run automatically by launchd:"
+    if ! launchctl list com.apple.syslogd &> /dev/null; then echo 
+        echo " launchctl list com.apple.syslogd returned exit code $? !!"
+    fi
+    if [ -z "$(pgrep syslogd)" ] ; then
+        echo " syslogd PID not found in process table !!"
+    fi
+}
+
+case "$1" in 
+    check)
+        check;
+        ;;
+    *)
+        echo "Usage: $0 {check|fix}"
+        ;;
+esac
+exit 0
+

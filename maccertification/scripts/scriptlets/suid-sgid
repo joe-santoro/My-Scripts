@@ -1,0 +1,47 @@
+#!/bin/bash
+#
+# - - -
+# authority: CIS/6.7
+# authority: CIS5/7.7
+# authority: LHC/1.9
+# description: Looks for SUID/SGID executables
+# - - -
+set -e
+
+. `dirname $0`/../../lib/functions
+
+check()
+{
+    # Anything written to stdout or stderr indicates a compliance problem.
+
+    sxid_file=$(mktemp -t SuidSgid.XXXXXX)
+
+    # Find SUID/SGID files.
+    # Filter out the SUID/SGID exes expected on this OS.
+    # Display the suspicious remainder:
+#    find / \( \( -fstype nfs -o -fstype autofs -o -fstype proc -o -fstype sysfs \) -prune \) -o \( -type f -perm /06000 \) -print >$sxid_file
+    find  /usr /var /etc  /opt /bin /sbin  -xdev -type f -perm +06000 > $sxid_file
+
+    expected_files=`dirname $0`/../../lib/resources/suid-sgid-MacOS
+    if [ ! -f "$expected_files" ] ; then
+        echo "Sorry, Cannot find list of expected SUID/SGID files at $expected_files" >&2
+        echo "The following files have SUID/SGID:"
+        cat $sxid_file
+    else
+        echo "))= UNEXPECTED SUID or SGID executables:"
+        cat $expected_files $expected_files $sxid_file | sort | uniq -u
+    fi
+
+    rm $sxid_file
+}
+
+case "$1" in 
+    check)
+        check;
+        ;;
+    *)
+        echo "Usage: $0 {check|fix}"
+        ;;
+esac
+exit 0
+

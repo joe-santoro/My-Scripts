@@ -1,0 +1,118 @@
+#!/bin/sh
+PATH=$PATH:/bin:/usr/bin:/sbin:/usr/sbin
+
+#pwd > $HOME_DIR
+#echo $HOME_DIR
+automatic=$1
+options=$2
+menu1=0; menu2=0;
+flag1=0; flag2=0;
+if test "$automatic" = "1"
+then
+    menu1=1;menu2=1;echo menu1=$menu1,menu2=$menu2;
+    echo options=$options
+fi
+
+until test "$console_in" = "0"
+do
+   #################### Main Menu ##########################
+   #clear
+    
+    echo "        CIS MACOS Benchmark v2.0"
+    echo "              Section 1 Menu"
+    echo 
+    if test "$menu1" = 1
+    then
+        echo "_X_ (1) 1.1 Apply latest OS Patches"
+    else
+        echo "___ (1) 1.1 Apply latest OS Patches"
+    fi
+    if test "$menu2" = 1
+    then
+        echo "_X_ (2) 1.2 Configure SSH"
+    else
+        echo "___ (2) 1.2 Configure SSH"
+    fi
+        
+    echo "(0) Back to Main Menu"
+    echo " Selection => "
+   
+    if test "$automatic" = "1"
+    then
+        echo "automatic opted"
+    else
+        read console_in
+    fi
+    if ((test "$console_in" = "1" || test "$menu1" = "1" ) && ( test "$flag1" != "1") )
+    then
+        echo "We'll first install the latest Mac OS software updates.. "
+        /usr/sbin/softwareupdate -i -a
+        if test "$automatic" != "1"	
+        then
+	        read console_in_temp_2
+        fi
+        echo "Section 1.1 completed."
+        menu1=1
+	    flag1=1
+    fi
+
+    if ((test "$console_in" = "2" || test "$menu2" = "1") && ( test "$flag2" != "1") )
+    then
+        SSH_CONFIG='/etc/ssh/ssh_config'
+        SSHD_CONFIG='/etc/ssh/sshd_config'
+        if [ -e $SSH_CONFIG ]; then
+            echo "Securing $SSH_CONFIG"
+            awk '/^#.* Host /               { print "Host *"; print "Protocol 2"; next };
+                 /^#.*Port /                { print "Port 22"; next };
+                 /^#.*PubkeyAuthentication/ { print "PubkeyAuthentication yes"; next };
+                                       { print }' /etc/ssh/ssh_config \
+                                                  > /etc/ssh/ssh_config.tmp2
+            if [ "`egrep -l ^Protocol /etc/ssh/ssh_config.tmp2`" == "" ]; then
+                echo 'Protocol 2' >> /etc/ssh/ssh_config.tmp2
+            fi
+            /bin/cp -pf /etc/ssh/ssh_config.tmp2 $SSH_CONFIG
+            chown root:wheel $SSH_CONFIG
+            chmod 0644        $SSH_CONFIG
+        else
+            echo "OK - No $SSH_CONFIG to secure."
+        fi
+        if [ -e $SSHD_CONFIG ]; then
+            echo "Securing $SSHD_CONFIG"
+            # Had to put the " no" in for the RhostsRSAAuthentication source pattern
+            # match, as otherwise the change was taking place twice so the file ended
+            # up with TWO records like that. The " no" pattern made the one unique.
+            # That 2nd record was a combination of comments in the original file.
+            # Some lines ARE duplicated in the original config file, one is commented
+            # out, the next one isn't.
+            # Also, the spacing below is a little off so lines fit on the page.
+            /bin/cp $SSHD_CONFIG /etc/ssh/sshd_config-preCIS
+            awk '/^#.*Port /                      { print "Port 22"; next };
+                /^#.*Protocol /                 { print "Protocol 2"; next };
+                /^#.*LogLevel /                 { print "LogLevel VERBOSE"; next };
+                /^#PermitRootLogin /            { print "PermitRootLogin no"; next };
+                /^#RhostsRSAAuthentication/ { print "RhostsRSAAuthentication no"; next };
+                /^#HostbasedAuthentication / { print "HostbasedAuthentication no"; next };
+                /^#.*IgnoreRhosts /             { print "IgnoreRhosts yes"; next };
+                /^#.*PermitEmptyPasswords /     { print "PermitEmptyPasswords no"; next };
+                /^#.*Banner /                   { print "Banner /etc/issue.net"; next };
+                                            { print;next }' /etc/ssh/sshd_config-preCIS \
+                                                       > $SSHD_CONFIG
+            chown root:wheel $SSHD_CONFIG
+            chmod 0600      $SSHD_CONFIG
+            echo "diff $SSHD_CONFIG-preCIS $SSHD_CONFIG"
+            diff $SSHD_CONFIG-preCIS $SSHD_CONFIG
+        else
+            echo "OK - No $SSHD_CONFIG to secure."
+        fi
+        #chmod -R 0400 /tmp/cis/*
+        unset SSH_CONFIG SSHD_CONFIG CONFIGITEM
+
+        echo "Section 1.2 completed."
+        menu2=1
+        flag2=1
+    fi
+    if test "$automatic" = "1" 
+    then
+        console_in=0
+    fi
+done

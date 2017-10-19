@@ -1,0 +1,36 @@
+#!/bin/bash
+#
+# - - -
+# authority: HHS/AC-2,5
+# description: Checks that root is among the users with default group 0
+# - - -
+set -e
+
+. `dirname $0`/../../lib/functions
+
+check()
+{
+    # Anything written to stdout or stderr indicates a compliance problem.
+    
+    echo "))= root's default group (/etc/passwd) is unexpected:"
+    awk -F: '($4 == 0) { print $1 }' /etc/passwd \
+        | grep -q root \
+        || grep root /etc/passwd
+    echo "))= root's default group (OpenDirectory) is unexpected:"
+    group=$(dscl . -read /Users/root | awk '/PrimaryGroupID/ { print $2 }')
+    if [ "$group" != "0" ] ; then
+        echo "PrimaryGroupID: $group"
+    fi
+
+}
+
+case "$1" in 
+    check)
+        check;
+        ;;
+    *)
+        echo "Usage: $0 {check|fix}"
+        ;;
+esac
+exit 0
+

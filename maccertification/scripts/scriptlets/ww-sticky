@@ -1,0 +1,37 @@
+#!/bin/bash
+#
+# - - -
+# authority: CIS/6.5
+# authority: CIS5/7.5
+# authority: LHC/1.8
+# description: Checks sticky bit on world-writable directories
+# - - -
+set -e
+
+. `dirname $0`/../../lib/functions
+
+check()
+{
+    # Anything written to stdout or stderr indicates a compliance problem.
+
+    ## Note: Partha Gosakan writes: "/nsr/applogs cannot be set with a
+    ## sticky bit.  Anytime nsr daemon restarts after a reboot, the
+    ## mode bits gets reverted to its original setting.  So there is
+    ## no point in testing for this."
+
+    echo "))= Non-sticky world-writable directories on HFS file systems:"
+    for part in $(mount | awk '$4 ~ /hf/ { print $3 } ') ; do
+      find $part -xdev -type d  \! -path /nsr/applogs  \( -perm -0002 -a ! -perm -1000 \) -ls
+    done 
+}
+
+case "$1" in 
+    check)
+        check;
+        ;;
+    *)
+        echo "Usage: $0 {check|fix}"
+        ;;
+esac
+exit 0
+

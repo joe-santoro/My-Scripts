@@ -1,0 +1,30 @@
+#!/bin/bash
+#
+# - - -
+# authority: CIS5/11.2
+# description: Spots user or group ID collisions
+# - - -
+set -e
+
+. `dirname $0`/../../lib/functions
+
+check()
+{
+    # Anything written to stdout or stderr indicates a compliance problem.
+
+    for FILE in /etc/group /etc/passwd ; do
+        echo "))= Duplicate uses of an ID number in $FILE:"
+        perl -MData::Dumper -e 'while(<>) {  next if (/^#/) ; $L=$_; next if ($L =~ /^\+/); ($name,$x,$num)=split(/:/); push(@{$a{$num}},$L) } ; @dupkeys = grep(1<@{$a{$_}}, keys(%a)); print map(join("",@{$a{$_}}), @dupkeys); ' $FILE
+    done
+}
+
+case "$1" in 
+    check)
+        check;
+        ;;
+    *)
+        echo "Usage: $0 {check|fix}"
+        ;;
+esac
+exit 0
+
