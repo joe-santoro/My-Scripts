@@ -60,8 +60,8 @@ apt-show-versions -u | grep $DISTRIB_SEC | awk '{print "#SEC="$0}' | todos >> $U
 apt-show-versions -u | egrep -v $DISTRIB_SEC | awk '{print "#SW="$0}' | todos >> $UPDATEFILE
 echo "#END" | todos >> $UPDATEFILE
 
-# Optional email results to the scripts author (me)
-#(echo From: "Joe Santoroski <jsantoroski@mail.nih.gov>" ; echo Subject: Tahoe packags ; uuencode $OUTFILE $OUTFILE ; uuencode $UPDATEFILE $UPDATEFILE ) | sendmail jsantoroski@mail.nih.gov
+# Optional email results
+#(echo From: "User At DomainDotCom <user@domain.com>" ; echo Subject: Tahoe packags ; uuencode $OUTFILE $OUTFILE ; uuencode $UPDATEFILE $UPDATEFILE ) | sendmail user@domain.com 
 
 # Keep the apt cache clean
 apt-get autoclean
