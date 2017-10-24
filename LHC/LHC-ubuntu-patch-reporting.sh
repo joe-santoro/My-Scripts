@@ -16,7 +16,6 @@
 
 # Get release name
 . /etc/lsb-release
-SEC="-security"
 DISTRIB_SEC="${DISTRIB_CODENAME}-security"
 #echo $DISTRIB_SEC
 
