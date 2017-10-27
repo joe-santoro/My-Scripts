@@ -1,0 +1,161 @@
+#!/bin/bash
+#
+# - - -
+# authority: CIS/5.3
+# authority: CIS5/6.3
+# description: Checks permissions of certain log files
+# - - -
+set -e 
+
+. `dirname $0`/../../lib/functions
+
+check()
+{
+    # Anything written to stdout or stderr indicates a compliance problem.
+
+    echo "))= /var/log/btmp must exist, for use by 'lastb', to satisfy DISA SRR (GEN000440):"
+    if [ ! -f /var/log/btmp ] ; then
+        ls /var/log/btmp
+    fi
+
+    echo "))= Deviant permissions:"
+
+    echo "))= Should be root:root g-w,o-rwx:"
+    # files:
+    find /var/log -maxdepth 1 \
+        \( \
+        -name 'dmesg' \
+        -o -name 'ksyms' \
+        -o -name 'rpmpkgs' \
+        -o -name 'scrollkeeper.log' \
+        \) \
+        \( -perm /0027 -o \! -user root -o \! -group root \) -ls
+
+    # Files that should be owned by "squid" if such a user exists:
+    if  id squid >/dev/null 2>&1 ; then 
+        echo "))= Should be squid:squid g-w,o-rwx:"
+        # files:
+        find /var/log/squid \
+            \( -perm /0027 -o \! -user squid -o \! -group squid \) -ls
+    fi
+
+    # RHEL6 does not have a news user/group...
+    if  getent passwd news >/dev/null  ; then
+        echo "))= Should be news:news g-w,o-rwx:"
+        # files:
+        find /var/log -maxdepth 1 \
+            \( \
+            -name 'news' \
+            \) \
+            \( -perm /0027 -o \! -user news -o \! -group news \) -ls
+    fi
+
+    echo "))= Should be root:root g-rwx,o-rwx:"
+    # files:
+    find /var/log -maxdepth 1 \
+        \( -name 'boot.log*' \
+        -o -name 'cron*' \
+        -o -name 'maillog*' \
+        -o -name 'messages*' \
+        -o -name 'sa' \
+        -o -name 'secure*' \
+        -o -name 'spooler*' \
+        \) \
+        \( -perm /0077 -o \! -user root -o \! -group root \) -ls
+
+    if  id postgres >/dev/null 2>&1 ; then 
+        echo "))= Should be postgres:postgres g-rwx,o-rwx:"
+        # files:
+        find /var/log -maxdepth 1 \
+            \( -name 'pgsql' \
+            \) \
+            \( -perm /0077 -o \! -user postgres -o \! -group postgres \) -ls
+    fi
+
+    echo "))= Should be root:root u-x,g-rwx,o-rwx:"
+    # files:
+    find /var/log -maxdepth 1 \
+        \( \
+        -name 'lastlog' \
+        -o -name 'mailman' \
+        \) \
+        \( -perm /0177 -o \! -user root -o \! -group root \) -ls
+
+    echo "))= Should be root:root g-rwx,o-rwx:"
+    # directory (check only if httpd is installed):
+    if  rpm -q httpd  >/dev/null ; then
+        find /var/log/httpd \
+            \( -perm /0077 -o \! -user root -o \! -group root \) -ls
+    fi
+
+    # directory:
+    if [ -a /var/log/samba ] ; then
+        find /var/log/samba \
+            \( -perm /0077 -o \! -user root -o \! -group root \) -ls
+    fi
+
+    if [ -e /var/log/vbox ] ; then
+        echo "))= Should be root:root g-w,o-rwx:"
+        find  /var/log/vbox \
+            \( -perm /0027 -o \! -user root -o \! -group root \) -ls
+    fi
+
+    echo "))= Should be root:utmp g-w,o-rwx:"
+    find /var/log -maxdepth 1 \
+        \( \
+        -name 'btmp' \
+        -o -name 'wtmp' \
+        \) \
+        \( -perm /0027 -o \! -user root -o \! -group utmp \) -ls
+
+    echo "))= Should be root:root g-w,o-w:"
+    find /var/log -maxdepth 1 \
+        \( -name 'gdm' \) \
+        \( -perm /0022 -o \! -user root -o \! -group root \) -ls
+
+    echo "))= Should be root:root u-x:"
+    find /var/log -maxdepth 1 \
+        \( -name 'kernel' \
+        -o -name 'syslog' \
+        -o -name 'loginlog' \
+        \) \
+        \( -perm /0100 -o \! -user root -o \! -group root \) -ls
+    
+    # CIS advises fixing /etc/rc.d/rc.sysinit
+    # which unsecures certain items:
+    rcsysinit_real=/etc/rc.d/rc.sysinit
+    rcsysinit_scratch=$(scratchfile $rcsysinit_real)
+
+    # RHEL5 does not set up utmpx or wtmpx.
+    # But if a sys admin sets them up, they should have more-restricted permissions than RHEL5 imposes:
+    if [ -f /var/run/utmpx -o -f /var/log/wtmpx ] ; then
+
+        awk '( $1 == "chmod" && $2 == "0664" && $3 == "/var/run/utmp"  && $4 == "/var/log/wtmp")  { $2 = "0600"; }
+         ( $1 == "chmod" && $2 == "0664" && $3 == "/var/run/utmpx" && $4 == "/var/log/wtmpx") { $2 = "0600"; }
+         { print }' $rcsysinit_real >$rcsysinit_scratch
+        
+        echo "))= Deviant (<) and expected (>) contents of ${rcsysinit_real}:"
+        diff -b $rcsysinit_real $rcsysinit_scratch || :
+    else
+        awk '( $1 == "chmod" && $2 == "0664" && $3 == "/var/run/utmp"  && $4 == "/var/log/wtmp")  { $2 = "0600"; }
+         { print }' $rcsysinit_real >$rcsysinit_scratch
+        
+        echo "))= Deviant (<) and expected (>) contents of ${rcsysinit_real}:  ALSO consider changing permissions of /usr/bin/w and /usr/bin/who to remove any confusion as to why users who cannot access /var/run/utmp get no results:"
+        diff -b $rcsysinit_real $rcsysinit_scratch || :
+    fi
+
+    echo "))= Should be root:root g-rwx,o-rwx:"
+    find /etc/rc.d -maxdepth 1 \
+        -name 'rc.sysinit' \( -perm /0077 -o \! -user root -o \! -group root \) -ls
+}
+
+case "$1" in 
+    check)
+        check;
+        ;;
+    *)
+        echo "Usage: $0 {check|fix}"
+        ;;
+esac
+exit 0
+

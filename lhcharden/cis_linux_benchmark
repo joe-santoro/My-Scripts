@@ -1,0 +1,134 @@
+#!/bin/sh
+PATH=$PATH:/bin:/usr/bin:/sbin:/usr/sbin
+_VERSION=$(cat ./VERSION)
+
+clear
+
+echo "lhcharden tool version $_VERSION"
+echo "lhcharden release date: " $(echo $_VERSION | sed 's/\(..\)\(..\)\(.*\)/\1\/\2\/\3/')
+echo ""
+echo "All related configuration files need to be backed up before running this tool."
+echo "Do you want to back up the original configuration files ? (y/n)"
+read  console_in
+if test "$console_in" = "y"
+then
+      ./cis_linux_backup
+      echo "Backup completed."
+else
+      echo "Are you sure you don't want to backup the configuration files? (y/n) "
+      echo "Press RETURN to exit or 'y' to continue."
+      read console_in_2
+      if test "$console_in_2" = "y" 
+      then
+           echo "Running the scripts without backuping the configuration files."
+      else
+           exit
+      fi
+fi
+
+menu1=0; menu2=0; menu3=0; menu4=0; menu5=0; menu6=0; menu7=0
+
+until test "$console_in" = "0"
+do
+   #################### Main Menu ##########################
+   #clear
+   echo "          CIS Linux Benchmark v1.1.0"
+   echo "                Main Menu"
+   echo 
+
+   if test "$menu1" = 1 
+   then
+   echo "_X_ (1) 1. Patches"
+   else 
+   echo "___ (1) 1. Patches"
+   fi
+   if test "$menu2" = 1 
+   then
+   echo "_X_ (2) 2. Minimize 'xinetd' network services"
+   else 
+   echo "___ (2) 2. Minimize 'xinetd' network services"
+   fi
+   if test "$menu3" = 1 
+   then
+   echo "_X_ (3) 3. Minimize boot services"
+   else 
+   echo "___ (3) 3. Minimize boot services"
+   fi
+   if test "$menu4" = 1 
+   then
+   echo "_X_ (4) 4. Kernel Tunning"
+   else 
+   echo "___ (4) 4. Kernel Tunning"
+   fi
+   if test "$menu5" = 1 
+   then
+   echo "_X_ (5) 5. Logging" 
+   else 
+   echo "___ (5) 5. Logging" 
+   fi
+   if test "$menu6" = 1 
+   then
+   echo "_X_ (6) 6. File/Directory Permission/Access"
+   else 
+   echo "___ (6) 6. File/Directory Permission/Access"
+   fi
+   if test "$menu7" = 1 
+   then
+   echo "_X_ (7) 7. System Access, Authentication, and Authorization"
+   else 
+   echo "___ (7) 7. System Access, Authentication, and Authorization"
+   fi
+   if test "$menu8" = 1 
+   then
+   echo "_X_ (8) 8. User Accounts and Environment"
+   else 
+   echo "___ (8) 8. User Accounts and Environment"
+   fi
+   echo "(0) Exit"
+   echo "Selection => "
+   read console_in
+  
+
+   if test "$console_in" = "1"
+   then
+      ./cis_linux_1
+      menu1=1
+   fi
+   if test "$console_in" = "2"
+   then
+      ./cis_linux_2
+      menu2=1
+   fi
+   if test "$console_in" = "3"
+   then
+      ./cis_linux_3
+      menu3=1
+   fi
+   if test "$console_in" = "4"
+   then
+      ./cis_linux_4
+      menu4=1
+   fi
+   if test "$console_in" = "5"
+   then
+      ./cis_linux_5
+      menu5=1
+   fi
+   if test "$console_in" = "6"
+   then
+      ./cis_linux_6
+      menu6=1
+   fi
+   if test "$console_in" = "7"
+   then
+      ./cis_linux_7
+      menu7=1
+   fi
+   if test "$console_in" = "8"
+   then
+      ./cis_linux_8
+      menu8=1
+   fi
+   
+done
+

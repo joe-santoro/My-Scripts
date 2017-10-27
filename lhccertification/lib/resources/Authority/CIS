@@ -1,0 +1,68 @@
+title=Center for Internet Security, Linux Benchmark v1.1.0
+1.1     Apply latest OS patches
+1.2     Configure ssh
+2.1     Disable standard services
+# 2.2     Enable telnet if absolutely necessary
+# 2.3   Enable FTP if absolutely necessary
+# 2.4   Enable rlogin/rsh/rcp if absolutely necessary
+# 2.5   Enable TFTP if absolutely necessary
+# 2.6   Enable IMAP if absolutely necessary
+# 2.7   Enable POP if absolutely necessary
+3.1     Set daemon umask
+3.2     Disable xinetd, if possible
+3.3     Disable email server, if possible
+3.4     Disable GUI login, if possible
+3.5     Disable X font server, if possible
+3.6     Disable standard boot services
+#3.7     Only enable SMB if absolutely necessary
+#3.8     Only enable NFS server if absolutely necessary
+#3.9     Only enable NFS client if absolutely necessary
+#3.10     Only enable NIS client if absolutely necessary
+#3.11    Only enable NIS server if absolutely necessary
+#3.12    Only enable RPC portmap if absolutely necessary
+#3.13    Only enable netfs if absolutely necessary
+#3.14    Only enable printer daemons if absolutely necessary
+3.14imp Configure cupsd
+#3.15    Only enable Web server daemons if absolutely necessary
+#3.16    Only enable SNMP processes if absolutely necessary
+#3.17    Only enable DNS server if absolutely necessary
+#3.18    Only enable SQL server if absolutely necessary
+#3.19    Only enable Webmin if absolutely necessary
+#3.20    Only enable Squid cache server if absolutely necessary
+#3.21    Only enable Kudzu hardware detection if absolutely necessary
+4.1     Network Parameter Modifications
+4.2     Additional Network Parameter Modifications
+5.0     Synchronize clock to facilitate log file correlation among different systems
+5.1     Capture messages sent to syslog AUTHPRIV facility
+5.2     Capture detailed FTP daemon logs
+5.3     Confirm permissions on system log files
+6.1     Add 'nodev' option to appropriate partitions in /etc/fstab
+6.2 Add 'nosuid' and 'nodev' option for removable media in /etc/fstab
+6.3 Disable user-mounted removable filesystems
+6.4 Verify passwd, shadow, and group file permissions
+6.5 World-writable directories should have their sticky bit set
+6.6 Find unauthorized world-writable files
+6.7 Find unauthorized SUID/SGID system executables
+7.1 Remove .rhosts support in PAM configuration files
+7.2 Create symlinks for dangerous files
+7.3 Create ftpusers files
+7.4 Prevent X server from listening on port 6000/tcp
+7.5 Restrict at/cron to authorized users
+7.6 Restrict permissions on crontab files
+7.7 Create appropriate warning banners
+7.8 Configure xinetd access control
+7.9 Restrict root logins to system console
+7.10 Set LILO/GRUB Password
+7.11 Require authentication for single-user-mode
+7.12 Restrict NFS client requests to privileged ports
+8.1 Block system accounts
+8.2 Verify that there are no accounts with empty password fields
+8.3 Set account expiration parameters on active accounts
+8.4 Verify no legacy '+' entries exist in passwd, shadow, and group files
+8.5 Verify that no UID 0 accounts exist other than root
+8.6 No '.' or group/world-writable directory in root's $PATH
+8.7 User home directories should be mode 750 or more restrictive
+8.8 No user dot-files should be world writable
+8.9 Remove user .netrc files
+8.10 Set default umask for users
+8.11 Disable core dumps

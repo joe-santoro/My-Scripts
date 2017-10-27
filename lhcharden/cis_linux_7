@@ -1,0 +1,513 @@
+#!/bin/sh
+RH=`cat /etc/redhat-release | awk '{print $7}'|cut -d. -f1`
+currentDir=`pwd`
+
+PATH=$PATH:/bin:/usr/bin:/sbin:/usr/sbin
+automatic=$1
+options=$2
+
+menu1=0; menu2=0; menu3=0; menu4=0; menu5=0; menu6=0
+menu7=0; menu8=0; menu9=0; menu10=0; menu11=0; menu12=0
+flag1=0; flag2=0; flag3=0; flag4=0; flag5=0; flag6=0
+flag7=0; flag8=0; flag9=0; flag10=0; flag11=0; flag12=0
+if test "$automatic" = "1"
+then
+        if test "$options" = "1"
+        then
+	menu1=1; menu2=1; menu3=1; menu4=1; menu5=1; menu6=1
+	menu7=1; menu8=1; menu9=1; menu11=1; menu12=1
+        elif test "$options" = "2"
+        then
+	menu1=1; menu2=1; menu3=1; menu5=1; menu6=1
+	menu7=1; menu8=1; menu9=1; menu11=1; menu12=1
+        else
+        echo "exited in parsing options in section 7 menus"
+        exit
+        fi
+fi
+
+
+until test "$console_in" = "0"
+do
+    #clear
+    echo "        CIS LINUX Benchmark v2.0"
+    echo "             Section 7  Menu"
+    echo 
+    if test "$menu1" = 1 
+    then
+        echo "_X_ (1) 7.1 Remove .rhosts support in PAM configuration files "
+    else
+        echo "___ (1) 7.1 Remove .rhosts support in PAM configuration files "
+    fi
+    if test "$menu2" = 1 
+    then
+        echo "_X_ (2) 7.2 Create symlinks for dangerous files "
+    else
+        echo "___ (2) 7.2 Create symlinks for dangerous files "
+    fi
+    if test "$menu3" = 1 
+    then
+        echo "_X_ (3) 7.3 Create ftpusers files "
+    else
+        echo "___ (3) 7.3 Create ftpusers files "
+    fi
+    if test "$menu4" = 1 
+    then
+        echo "_X_ (4) 7.4 Prevent X server from listening on port 6000/tcp "
+    else
+        echo "___ (4) 7.4 Prevent X server from listening on port 6000/tcp "
+    fi
+    if test "$menu5" = 1 
+    then
+        echo "_X_ (5) 7.5 Restrict at/cron to authorized users "
+    else
+        echo "___ (5) 7.5 Restrict at/cron to authorized users "
+    fi
+    if test "$menu6" = 1 
+    then
+        echo "_X_ (6) 7.6 Restrict permissions on crontab files "
+    else
+        echo "___ (6) 7.6 Restrict permissions on crontab files "
+    fi
+    if test "$menu7" = 1 
+    then
+        echo "_X_ (7) 7.7 Create appropriate warning banners "
+    else
+        echo "___ (7) 7.7 Create appropriate warning banners "
+    fi
+    if test "$menu8" = 1 
+    then
+        echo "_X_ (8) 7.8 Configure xinetd access control (!!! NOT recommended !!!) "
+    else
+        echo "___ (8) 7.8 Configure xinetd access control (!!! NOT recommended !!!) "
+    fi
+    if test "$menu9" = 1 
+    then
+        echo "_X_ (9) 7.9 Restrict root logins to system console"
+    else
+        echo "___ (9) 7.9 Restrict root logins to system console"
+    fi
+    if test "$menu10" = 1 
+    then
+        echo "_X_ (10) 7.10 Set LILO/GRUB Password (!!! NOT recommended !!!)"
+    else
+        echo "___ (10) 7.10 Set LILO/GRUB Password (!!! NOT recommended !!!)"
+    fi
+    if test "$menu11" = 1 
+    then
+        echo "_X_ (11) 7.11 Require authentication for single-user-mode "
+    else
+        echo "___ (11) 7.11 Require authentication for single-user-mode "
+    fi
+    if test "$menu12" = 1 
+    then
+        echo "_X_ (12) 7.12 Restrict NFS client requests to privileged ports "
+    else
+        echo "___ (12) 7.12 Restrict NFS client requests to privileged ports "
+    fi
+    echo "    (0)  Back to Main Menu"
+    echo " Selection => "
+    if test "$automatic" = "1"
+    then
+        echo "automatic opted"
+    else
+        read console_in
+    fi   
+
+    if ((test "$console_in" = "1" || test "$menu1" = "1" ) && ( test "$flag1" != "1") )
+    then
+        for file in /etc/pam.d/* ; do 
+            grep -v rhosts_auth $file > ${file}.new 
+            /bin/mv ${file}.new $file 
+            /bin/chown root:root $file 
+            /bin/chmod 644 $file 
+        done 
+        echo "Section 7.1 completed."
+        menu1=1
+        flag1=1
+    fi
+   
+	if ((test "$console_in" = "2" || test "$menu2" = "1" ) && ( test "$flag2" != "1") )
+   then
+      for file in /root/.rhosts /root/.shosts /etc/hosts.equiv /etc/shosts.equiv 
+      do 
+            /bin/rm -f $file 
+            ln -s /dev/null $file 
+      done 
+      echo "Section 7.2 completed."
+      menu2=1
+      flag2=1
+   fi
+    
+    if ((test "$console_in" = "3" || test "$menu3" = "1" ) && ( test "$flag3" != "1") )
+    then
+    if [ -f "/etc/ftpusers" ] ; then
+        for name in `cut -d: -f1 /etc/passwd` 
+        do 
+            
+            if [ `id -u $name` -lt 500 ] 
+            then 
+		        /bin/sed -i '/$name/d' /etc/ftpusers && echo $name >> /etc/ftpusers 
+            fi 
+        done 
+        /bin/chown root:root /etc/ftpusers 
+        /bin/chmod 600 /etc/ftpusers 
+    fi
+      if [ -e /etc/vsftpd.conf ] || \
+            [ -e /etc/vsftpd/vsftpd.conf ]; then 
+            /bin/rm -f /etc/vsftpd.ftpusers 
+#	    /bin/cp /etc/ftpusers /etc/vsftpd.ftpusers 
+            /bin/cp /etc/ftpusers /etc/vsftpd/user_list 
+      fi 
+      echo "Section 7.3 completed."
+      menu3=1
+	flag3=1
+   fi
+
+	if ((test "$console_in" = "4" || test "$menu4" = "1" ) && ( test "$flag4" != "1") )
+   then
+      if [ -e /etc/X11/xdm/Xservers ] ; then 
+            cd /etc/X11/xdm 
+            awk '($1 !~ /^#/ && $3 == "/usr/X11R6/bin/X") \
+                  { $3 = $3 " -nolisten tcp" }; 
+                  { print }' Xservers > Xservers.new 
+            /bin/mv Xservers.new Xservers 
+            /bin/chown root:root Xservers 
+            /bin/chmod 444 Xservers 
+      fi 
+      if [ -e /etc/X11/gdm/gdm.conf ] ; then 
+            cd /etc/X11/gdm 
+            awk -F= '($2 ~ /\/X$/) \
+                  { printf("%s -nolisten tcp\n", $0); next }; 
+                  { print }' gdm.conf > gdm.conf.new 
+            /bin/mv gdm.conf.new gdm.conf 
+            /bin/chown root:root gdm.conf 
+            /bin/chmod 644 gdm.conf 
+      fi 
+      if [ -d /etc/X11/xinit ] ; then 
+            cd /etc/X11/xinit 
+            if [ -e xserverrc ] ; then 
+            awk '/X/ && !/^#/ \
+                  { print $0 " :0 -nolisten tcp \$@"; next }; \
+                  { print }' xserverrc > xserverrc.new 
+            /bin/mv xserverrc.new xserverrc 
+            else 
+               cat <<ENDSCRIPT >xserverrc 
+#!/bin/bash
+exec X :0 -nolisten tcp \$@
+ENDSCRIPT
+            fi 
+            /bin/chown root:root xserverrc 
+            /bin/chmod 755 xserverrc 
+      fi 
+
+      echo "Section 7.4 completed."
+      menu4=1
+      flag4=1
+   fi
+   
+	if ((test "$console_in" = "5" || test "$menu5" = "1" ) && ( test "$flag5" != "1") )
+   then
+      cd /etc/ 
+      /bin/rm -f cron.deny at.deny 
+      echo root >cron.allow 
+      echo root >at.allow 
+      /bin/chown root:root cron.allow at.allow 
+      /bin/chmod 400 cron.allow at.allow 
+
+      echo "Section 7.5 completed."
+      menu5=1
+      flag5=1
+   fi
+
+	if ((test "$console_in" = "6" || test "$menu6" = "1" ) && ( test "$flag6" != "1") )
+   then
+      /bin/chown root:root /etc/crontab 
+      /bin/chmod 400 /etc/crontab 
+      /bin/chown -R root:root /var/spool/cron 
+      /bin/chmod -R go-rwx /var/spool/cron 
+      /bin/chown -R root:root /etc/cron.* 
+      /bin/chmod -R go-rwx /etc/cron.* 
+
+      echo "Section 7.6 completed."
+      menu6=1
+      flag6=1
+   fi
+
+	if ((test "$console_in" = "7" || test "$menu7" = "1" ) && ( test "$flag7" != "1") )
+   then
+      echo "1. Create banners for console and X mode: "
+echo "#####################################################################################################">/etc/motd
+echo "#                      ***WARNING***                                                                #">>/etc/motd
+echo "# * This warning banner provides privacy and security notices consistent with applicable federal    #">>/etc/motd
+echo "#   laws, directives,and other federal guidance for accessing this Government system,               #">>/etc/motd
+echo "#   which includes                                                                                  #">>/etc/motd
+echo "#     (1) this computer network,                                                                    #">>/etc/motd
+echo "#     (2) all computers connected to this network, and                                              #">>/etc/motd
+echo "#     (3) all devices and storage media attached to this network or to a computer on this network.  #">>/etc/motd
+echo "# * This system is provided for Government-authorized use only.                                     #">>/etc/motd
+echo "# * Unauthorized or improper use of this system is prohibited and may result in disciplinary        #">>/etc/motd
+echo "#   action and/or civil and criminal penalties.                                                     #">>/etc/motd
+echo "# * Personal use of social media and networking sites on this system is limited as to not           #">>/etc/motd
+echo "#   interfere with official work duties and is subject to monitoring.                               #">>/etc/motd
+echo "# * By using this system, you understand and consent to the following:                              #">>/etc/motd
+echo "# * The Government may monitor, record, and audit your system usage, including usage of             #">>/etc/motd
+echo "#   personal devices and email systems for official duties or to conduct HHS business.              #">>/etc/motd
+echo "#   Therefore, you have no reasonable expectation of privacy regarding any communication or         #">>/etc/motd
+echo "#   data transiting or stored on this system.                                                       #">>/etc/motd
+echo "#   At any time, and for any lawful Government purpose, the government may monitor, intercept,      #">>/etc/motd
+echo "#   and search and seize any communication or data transiting or stored on this system.             #">>/etc/motd
+echo "# * Any communication or data transiting or stored on this system may be disclosed or used          #">>/etc/motd
+echo "#   for any lawful Government purpose.                                                              #">>/etc/motd
+echo "#####################################################################################################">>/etc/motd
+           cp -f /etc/motd /etc/issue
+           cp -f /etc/motd /etc/issue.net
+	
+      /bin/chown root:root /etc/motd /etc/issue /etc/issue.net 
+      /bin/chmod 644 /etc/motd /etc/issue /etc/issue.net 
+      if [ -e /etc/X11/xdm/kdmrc ] ; then 
+            cd /etc/X11/xdm 
+            awk '/GreetString=/ \
+                  { print "GreetString=Authorized uses only!"; next }; 
+                  { print }' kdmrc >kdmrc.new 
+            /bin/mv kdmrc.new kdmrc 
+            /bin/chown root:root kdmrc 
+            /bin/chmod 644 kdmrc 
+      fi 
+      if [ -e /etc/X11/gdm/gdm.conf ] ; then 
+            cd /etc/X11/gdm 
+            awk '/^Greeter=/ && /gdmgreeter/ \
+                  { printf("#%s\n", $0); next }; 
+                  /^#Greeter=/ && /gdmlogin/ \
+                  { $1 = "Greeter=/usr/bin/gdmlogin" }; 
+                  /Welcome=/ \
+                  { print "Welcome=Authorized uses only!"; next }; 
+                  { print }' gdm.conf >gdm.conf.new 
+            /bin/mv gdm.conf.new gdm.conf 
+            /bin/chown root:root gdm.conf 
+            /bin/chmod 644 gdm.conf 
+      fi 
+      if [ -e /etc/gdm/custom.conf ] ; then
+	sed -e '/greeter/a InfoMsgFile=/etc/issue' /etc/gdm/custom.conf>/etc/gdm/custom.conf.cisNEW 
+	/bin/cp -f /etc/gdm/custom.conf.cisNEW /etc/gdm/custom.conf
+      fi
+      if [ -e /etc/X11/xdm/Xresources ] ; then 
+            cd /etc/X11/xdm 
+            awk '/greeting:/ \
+                  { print "xlogin*greeting: Authorized uses only!"; next }; 
+                  { print }' Xresources >Xresources.new 
+            /bin/mv Xresources.new Xresources 
+            /bin/chown root:root Xresources 
+            /bin/chmod 644 Xresources 
+      fi 
+ 
+      echo "2. Create "authorized only" banners for network services using TCP Wrappers: "
+      [ ! -d "/etc/banners" ] && mkdir /etc/banners ; 
+      cd /etc/banners 
+      if [ -e /usr/doc/tcp_wrappers-7.6/Banners.Makefile ]; then 
+            cp /usr/doc/tcp_wrappers-7.6/Banners.Makefile /etc/banners/Makefile
+      elif [ -e /usr/share/doc/tcp_wrappers-7.6/Banners.Makefile ]; then
+            cp /usr/share/doc/tcp_wrappers-7.6/Banners.Makefile  /etc/banners/Makefile
+      fi 
+      echo "Authorized uses only. All activity may be monitored and reported." > /etc/banners/prototype 
+#      make 
+      cd /etc/xinetd.d 
+      for file in telnet krb5-telnet ; do 
+            if [ -f $file ]; then 
+                  awk '( $1 == "}" ) \
+                        { print "banner = /etc/issue.net" }; 
+                        { print }' $file >$file.new 
+                  /bin/mv $file.new $file 
+            fi 
+      done 
+      for file in wu-ftpd gssftp ; do 
+            if [ -f $file ]; then 
+            awk '( $1 == "}" ) \
+                  { print "banner = /etc/issue.net" }; 
+                  { print }' $file >$file.new 
+            /bin/mv $file.new $file 
+            fi 
+      done 
+      for file in rsh kshell ; do 
+            if [ -f $file ]; then 
+            awk '( $1 == "}" ) \
+                  { print "banner = /etc/issue.net" }; 
+                  { print }' $file >$file.new 
+                  /bin/mv $file.new $file 
+            fi 
+      done 
+      for file in rlogin klogin eklogin ; do 
+            if [ -f $file ]; then 
+                  awk '( $1 == "}" ) \
+                        { print "banner = /etc/issue.net" }; 
+                        { print }' $file >$file.new 
+                  /bin/mv $file.new $file 
+            fi 
+      done 
+      /bin/chown root:root {krb5-,}telnet gssftp wu-ftpd rsh \
+            kshell rlogin klogin eklogin                2> /dev/null
+      /bin/chmod 644 {krb5-,}telnet gssftp wu-ftpd rsh kshell \
+            rlogin klogin eklogin                       2> /dev/null
+
+ 
+      echo "3. Create "authorized only" banners vsftpd, if applicable: "
+      cd /etc 
+      if [ -d vsftpd ]; then 
+            cd vsftpd  
+      fi 
+      if [ -e vsftpd.conf ] ; then 
+            echo "ftpd_banner=Authorized uses only. All activity \
+may be monitored and reported." >> vsftpd.conf 
+      fi 
+      echo "Section 7.7 completed."
+      menu7=1
+      flag7=1
+   fi
+
+	if ((test "$console_in" = "8" || test "$menu8" = "1" ) && ( test "$flag8" != "1") )
+   then
+      echo "Manually insert the following line into the 'defaults' block in /etc/xinetd.conf" 
+      echo "only_from=<net>/<num_bits> <net>/<num_bits>  "
+      echo "where each <net>/<num_bits> combination represents one network block in use by your organization."
+      echo "Press ENTER after completed."
+	echo "Please turn off xinetd, otherwise, manually run Section 7.8">>/tmp/lhcharden-`hostname`
+	if test "$automatic" != 1
+	then
+      read console_in_temp_2
+	fi
+      echo "Section 7.8 completed."
+      menu8=1
+      flag8=1
+   fi
+
+	if ((test "$console_in" = "9" || test "$menu9" = "1" ) && ( test "$flag9" != "1") )
+   then
+      /bin/cp /dev/null /etc/securetty 
+      for i in 1 2 3 4 5 6; do 
+            echo tty$i >>/etc/securetty 
+            echo vc/$i >>/etc/securetty 
+      done 
+      echo console >>/etc/securetty 
+      /bin/chown root:root /etc/securetty 
+      /bin/chmod 400 /etc/securetty 
+	if [ -e /etc/X11/gdm/gdm.conf ] ; then
+            cd /etc/X11/gdm
+            awk '/^Greeter=/ && /gdmgreeter/ \
+                  { printf("#%s\n", $0); next }; 
+                  /^#Greeter=/ && /gdmlogin/ \
+                  { $1 = "Greeter=/usr/bin/gdmlogin" }; 
+                  /AllowRoot=true/ \
+                  {print "AllowRoot=false";next };
+                  /Welcome=/ \
+                  { print "Welcome=Authorized uses only!"; next }; 
+                  { print }' gdm.conf >gdm.conf.cisNEW
+            /bin/mv gdm.conf.cisNEW gdm.conf
+            /bin/chown root:root gdm.conf
+            /bin/chmod 644 gdm.conf
+      fi
+      if [ -e /etc/gdm/custom.conf ] ; then
+        sed -e '/greeter/a InfoMsgFile=/etc/issue' \
+                -e '/security/a AllowRoot=false' \
+                -e '/security/a AllowRemoteRoot=false' /etc/gdm/custom.conf>/etc/gdm/custom.conf.cisNEW
+        /bin/mv -f /etc/gdm/custom.conf.cisNEW /etc/gdm/custom.conf
+      fi
+      if [ -e /etc/X11/xdm/Xresources ] ; then
+            cd /etc/X11/xdm
+            awk '/greeting:/ \
+                  { print "xlogin*greeting: Authorized uses only!"; next }; 
+                  { print }' Xresources >Xresources.new
+            /bin/mv Xresources.new Xresources
+            /bin/chown root:root Xresources
+            /bin/chmod 644 Xresources
+      fi
+
+      echo "Section 7.9 completed."
+      menu9=1
+      flag9=1
+   fi
+
+	if ((test "$console_in" = "10" || test "$menu10" = "1" ) && ( test "$flag10" != "1") )
+   then
+      echo "Set Password for  (!!! NOT recommended !!!)"
+      echo "(1) LILO"
+      echo "(2) GRUB"
+      echo " Selection => "
+      read console_in_tmp
+
+      if test "$console_in_tmp" = "1"
+      then
+         echo "Manually add the following two lines to the beginning of /etc/lilo.conf 
+         echo "restricted 
+         echo "password=<password> "
+         echo "Press ENTER after completed."
+         read console_in_temp_2
+         /bin/chown root:root /etc/lilo.conf 
+         /bin/chmod 600 /etc/lilo.conf 
+         lilo 
+      fi      
+      if test "$console_in_tmp" = "2"
+      then
+         echo "Manually add this line to /etc/grub.conf before the first uncommented line." 
+         echo "password <password> "
+         echo "Press ENTER after completed."
+         read console_in_temp_2
+         /bin/chown root:root /etc/grub.conf 
+         /bin/chmod 600 /etc/grub.conf 
+      fi      
+      echo "Section 7.10 completed."
+      menu10=1
+      flag10=1
+   fi
+
+	if ((test "$console_in" = "11" || test "$menu11" = "1" ) && ( test "$flag11" != "1") )
+   then
+if [ $RH -ne 6 ]; then
+      cd /etc 
+      if [ "`grep -l sulogin inittab`" = "" ]; then 
+            awk '{ print }; 
+            /^id:[0123456sS]:initdefault:/ \
+            { print "~~:S:wait:/sbin/sulogin" }' \
+            inittab >inittab.new 
+            /bin/mv inittab.new inittab 
+      fi 
+fi
+if [ $RH -eq 6 ]; then
+sed -i 's/^SINGLE=\/sbin\/sushell/#SINGLE=\/sbin\/sushell/' /etc/sysconfig/init;
+/bin/sed -i '/SINGLE=\/sbin\/sulogin/d' /etc/sysconfig/init && echo "SINGLE=/sbin/sulogin" >> /etc/sysconfig/init;
+fi
+      /bin/chown root:root /etc/inittab
+      /bin/chmod 0600 /etc/inittab
+      echo "Section 7.11 completed."
+      menu11=1
+      flag11=1
+fi
+	if ((test "$console_in" = "12" || test "$menu12" = "1" ) && ( test "$flag12" != "1") )
+   then
+      perl -i.orig -pe \
+            'next if (/^\s*#/ || /^\s*$/); 
+            ($res, @hst) = split(" "); 
+            foreach $ent (@hst) { 
+                  undef(%set); 
+                  ($optlist) = $ent =~ /\((.*?)\)/; 
+                  foreach $opt (split(/,/, $optlist)) { 
+                        $set{$opt} = 1; 
+                  } 
+                  delete($set{"insecure"}); 
+                  $set{"secure"} = 1; 
+                  $ent =~ s/\(.*?\)//; 
+                  $ent .= "(" . join(",", keys(%set)) . ")"; 
+            } 
+            $hst[0] = "(secure)" unless (@hst); 
+            $_ = "$res\t" . join(" ", @hst) . "\n";' \
+      /etc/exports 
+      echo "Section 7.12 completed."
+      menu12=1
+      flag12=1
+   fi
+
+if test "$automatic" = "1" 
+then
+console_in=0
+fi
+
+done

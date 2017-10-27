@@ -1,0 +1,44 @@
+#!/bin/bash
+#
+# - - -
+# authority: CIS/7.7
+# description: Examines xinetd.d/* for banners and checks /etc/banners/in* for boilerplate
+# - - -
+set -e 
+
+. `dirname $0`/../../lib/functions
+
+check()
+{
+    # Anything written to stdout or stderr indicates a compliance problem.
+
+    # Do the files in /etc/xinetd.d designate /etc/banners?
+
+    cd /etc/xinetd.d
+    for file in telnet krb5-telnet wu-ftpd gssftp rsh kshell rlogin klogin eklogin
+    do
+        if [ -f $file ] ; then
+            echo "))= Expected stuff not found:"
+            grep_positive "banner.*/etc/banners" $file
+        fi
+    done
+
+    # Do the banners in /etc/banners pass muster?
+
+    required='Authorized uses only. All activity may be monitored and reported.'
+    for file in /etc/banners/in* ; do
+        echo "))= Expected stuff not found:"
+        grep_positive "$required" $file
+    done
+}
+
+case "$1" in 
+    check)
+        check;
+        ;;
+    *)
+        echo "Usage: $0 {check|fix}"
+        ;;
+esac
+exit 0
+

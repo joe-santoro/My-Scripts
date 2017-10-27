@@ -1,0 +1,35 @@
+#!/bin/bash
+#
+# - - -
+# authority: CIS5/11.1
+# authority: HHS/AU-2,1
+# description: Checks that auditd will run automatically
+
+set -e
+
+. `dirname $0`/../../lib/functions
+
+check()
+{
+    # Anything written to stdout or stderr indicates a compliance problem.
+
+    # Skip the check for auditd on x86_64 architecture pending discovery of the proper auditd.rules:
+    if [ "$(uname -i)" != 'i386' ] ; then
+        exit 0
+    fi
+
+     echo "))= auditd is disabled by default"
+#    echo "))= auditd service is not set to run automatically:"
+#    check_service auditd
+}
+
+case "$1" in 
+    check)
+        check;
+        ;;
+    *)
+        echo "Usage: $0 {check|fix}"
+        ;;
+esac
+exit 0
+

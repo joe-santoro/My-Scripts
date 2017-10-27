@@ -1,0 +1,45 @@
+#!/bin/bash
+#
+# - - -
+# authority: LHC/1.49
+# description: Check /etc/pam.d/sshd for the securid module
+# - - -
+set -e
+
+. `dirname $0`/../../lib/functions
+
+check()
+{
+    # Anything written to stdout or stderr indicates a compliance problem.
+
+    sshd_real=/etc/pam.d/sshd
+    sshd_scratch=$(scratchfile $sshd_real)
+
+    # In a pam file, order matters.
+    # The only "auth" line should be "auth sufficient pam_securid.so service=system-auth reserve"
+    awk 'BEGIN { auth=0 }
+         ($1=="auth" && $auth==0) {print "auth\tsufficient\tpam_securid.so service=system-auth reserve"; next }
+         ($1=="auth" && $auth!=0) {next}
+         {print}' $sshd_real >$sshd_scratch
+
+    # Verify that sshd_scratch contains the line:
+    if [ "`grep -c '^auth' $sshd_scratch`" == "0" ] ; then 
+        echo "$sshd_real does not contain 'auth sufficient pam_securid.so ...'"
+        return 2
+    fi 
+
+    report_diff $sshd_real $sshd_scratch
+
+    check_user_group_perms root root 0644 $sshd_real
+}
+
+case "$1" in 
+    check)
+        check;
+        ;;
+    *)
+        echo "Usage: $0 {check|fix}"
+        ;;
+esac
+exit 0
+

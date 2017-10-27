@@ -1,0 +1,33 @@
+#!/bin/bash
+#
+# - - -
+# authority: HHS/IA-5,1
+# authority: CIS/8.4
+# authority: CIS5/9.4
+# description: Checks for "+" entries in /etc/group and /etc/gshadow
+# - - -
+set -e
+
+. `dirname $0`/../../lib/functions
+
+check()
+{
+    # Anything written to stdout or stderr indicates a compliance problem.
+
+    echo "))= Red flag found ('+' accounts in /etc/group):"
+    grep ^+: /etc/group || :
+
+    echo "))= Red flag found ('+' accounts in /etc/gshadow):"
+    grep ^+: /etc/gshadow || :
+}
+
+case "$1" in 
+    check)
+        check;
+        ;;
+    *)
+        echo "Usage: $0 {check|fix}"
+        ;;
+esac
+exit 0
+

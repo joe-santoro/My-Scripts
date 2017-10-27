@@ -1,0 +1,57 @@
+#!/bin/bash
+#
+# - - -
+# authority: HHS/CM-7,1
+# authority: CIS/8.10
+# authority: CIS5/9.9
+# description: Checks umask in, and permissions of, profile, csh.login, bashrc, and so forth
+# - - -
+set -e
+
+. `dirname $0`/../../lib/functions
+
+check()
+{
+    # Anything written to stdout or stderr indicates a compliance problem.
+
+    for file in /etc/profile /etc/csh.login /etc/csh.cshrc /etc/bashrc
+      do 
+      # Umask:
+      echo "))= umask 027 is expected. In $file, here are the lines that contain 'umask':"
+      suggest_umask_027 $file
+
+      # Permissions:
+      check_user_group_perms root root 0444 $file
+    done 
+
+
+    for file in /root/.bash_profile /root/.bashrc /root/.cshrc /root/.tcshrc
+      do 
+      # Skip .tcshrc test if the file is absent.
+      if [ -e $file -o $file != '/root/.tcshrc' ] ; then
+          # Umask:
+          echo "))= umask 027 is expected. In $file, here are the lines that contain 'umask':"
+          suggest_umask_027 $file
+      fi
+    done 
+    echo "))= Deviant permissions - expected root:root 0400:"
+    for file in /root/.bash_profile /root/.bashrc /root/.cshrc /root/.tcshrc
+      do 
+      # Skip .tcshrc test if the file is absent.
+      if [ -e $file -o $file != '/root/.tcshrc' ] ; then
+          # Permissions:
+          find $file -maxdepth 0 \
+              \( \! -perm 0400 -o \! -user root -o \! -group root \) -ls
+      fi
+    done 
+}
+
+case "$1" in 
+    check)
+        check;
+        ;;
+    *)
+        echo "Usage: $0 {check|fix}"
+        ;;
+esac
+exit 0

@@ -1,0 +1,58 @@
+#!/bin/bash
+#
+# - - -
+# authority: CIS/1.2
+# authority: CIS5/2.3
+# authority: LHC/1.27
+# description: Checks "Protocol" in ssh config
+# - - -
+set -e
+
+. `dirname $0`/../../lib/functions
+
+check()
+{
+    # Anything written to stdout or stderr indicates a compliance problem.
+
+    ssh_config_real=/etc/ssh/ssh_config
+    ssh_config_scratch=`scratchfile $ssh_config_real`
+
+    # Copy ssh_config_real to ssh_config_scratch, tweaking on the way:
+
+    awk '/^# *Host \*/ { print; next }
+         /^#.* Host / { print "Host *"; print "Protocol 2"; next }
+         /^[# ]*Protocol.*1/ { print "Protocol 2"; next }
+         /^# *Port 22$/ { print; next }
+         /^[# ]*Port / { print "Port 22"; next }
+         /^#.*PubkeyAuthentication/ { print "PubkeyAuthentication yes"; next}
+         /^#.*ForwardAgent no$/ { print; next}
+         /^#.*ForwardAgent/ { print "ForwardAgent no"; next}
+         {print}' $ssh_config_real >$ssh_config_scratch
+
+    # IF, disregarding duplicates and comments and the order of the lines,
+    # the original is equal to the expected, then make no complaint.
+    sort "$ssh_config_real" | uniq | grep -v '^ *#' > "${ssh_config_scratch}..0uniq"
+    sort "$ssh_config_scratch" | uniq | grep -v '^ *#'  > "${ssh_config_scratch}..1uniq"
+
+    if  diff -bq "${ssh_config_scratch}..0uniq" "${ssh_config_scratch}..1uniq" >/dev/null ; then
+        rm "${ssh_config_scratch}..1uniq" "${ssh_config_scratch}..0uniq"
+    else
+        rm "${ssh_config_scratch}..1uniq" "${ssh_config_scratch}..0uniq"
+        # If we had to make changes, note it as noncompliance:
+        report_diff $ssh_config_real $ssh_config_scratch
+    fi
+
+ 
+    check_user_group_perms root root 0644 $ssh_config_real
+}
+
+case "$1" in 
+    check)
+        check;
+        ;;
+    *)
+        echo "Usage: $0 {check|fix}"
+        ;;
+esac
+exit 0
+

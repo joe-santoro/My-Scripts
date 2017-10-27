@@ -1,0 +1,43 @@
+#!/bin/bash
+#
+# - - -
+# authority: CIS5/9.11
+# description: For 'su' to root, pam should allow only members of the wheel group.
+# - - -
+set -e
+
+. `dirname $0`/../../lib/functions
+
+check()
+{
+    # Anything written to stdout or stderr indicates a compliance problem.
+
+    su_real=/etc/pam.d/su
+    su_scratch=$(scratchfile $su_real)
+
+    # In a pam file, order matters.
+    # Uncomment the line that requires 'wheel' group membership:
+    awk '($1=="#auth" && $2=="required" && $3~"pam_wheel.so") {$1="auth"} 
+         {print}' $su_real >$su_scratch
+
+    # Verify that su_scratch contains the line:
+    if [ "`grep -c '^auth.*required.*pam_wheel.so' $su_scratch`" == "0" ] ; then 
+        echo "$su_real does not contain 'auth required pam_wheel.so'"
+        return 2
+    fi 
+
+    report_diff $su_real $su_scratch
+
+    check_user_group_perms root root 0644 $su_real
+}
+
+case "$1" in 
+    check)
+        check;
+        ;;
+    *)
+        echo "Usage: $0 {check|fix}"
+        ;;
+esac
+exit 0
+

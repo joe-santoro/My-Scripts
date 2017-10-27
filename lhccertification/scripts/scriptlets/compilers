@@ -1,0 +1,34 @@
+#!/bin/bash
+#
+# - - -
+# authority: CIS5/SN.10
+# authority: LHC/1.48
+# description: Checks for compilers
+# - - -
+set -e 
+
+. `dirname $0`/../../lib/functions
+
+check()
+{
+    # Anything written to stdout or stderr indicates a compliance problem.
+
+    echo "))= Compilers should not be installed on public-facing servers:"
+    rpm -qa | grep '^gcc' || :
+    rpm -qa | grep '^nasm' || :
+
+    ## There are various "alternative" packages in RHEL5 for the Java SDK.
+    ## The java compiler is not always separable from RHEL's Tomcat.
+    ## rpm -qa | grep '^java.*devel' || :
+}
+
+case "$1" in 
+    check)
+        check;
+        ;;
+    *)
+        echo "Usage: $0 {check|fix}"
+        ;;
+esac
+exit 0
+

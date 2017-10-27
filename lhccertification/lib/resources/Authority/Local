@@ -1,0 +1,11 @@
+title=Local Requirements
+1 No NIS accounts on public servers.
+2 An idle screen soon locks itself.
+3 Remote administration is configured (e.g., BigFix).
+4 Syslog service runs automatically.
+5 ntp.conf uses only trusted servers (NTPUserGuideV6.pdf).
+6 Card reader is configured.
+7 Azeti Nagios agent is running (required if inside the computer room)
+8 Postfix does not listen or send mail locally.
+9 No service listens on an IPv6 interface.
+10 The nlmlhcnscanner account is properly configured.

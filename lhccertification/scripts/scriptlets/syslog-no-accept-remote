@@ -1,0 +1,53 @@
+#!/bin/bash
+#
+# - - -
+# authority: HHS/AU-9,1
+# description: Checks syslog options
+# - - -
+set -e 
+
+. `dirname $0`/../../lib/functions
+
+check()
+{
+    # Anything written to stdout or stderr indicates a compliance problem.
+    SYSLOG=
+
+    guess_RH_version
+
+    case "$RH" in
+        4)
+            SYSLOG=syslog
+            ;;
+        5)
+            SYSLOG=syslog
+            ;;
+        6)
+            SYSLOG=rsyslog
+            ;;
+        7)
+            SYSLOG=rsyslog
+            ;;
+        *)
+            SYSLOG=syslog
+            ;;
+    esac
+            
+    echo "))= $SYSLOG should not be given the -r option:"
+    egrep '^\s*SYSLOGD_OPTIONS\s*=.*-r' /etc/sysconfig/$SYSLOG  || :
+}
+
+while [ -n "$1" ] ; do
+    case "$1" in 
+        check)
+            check
+            break
+            ;;
+        *)
+            echo "Usage: $0 {check|fix}"
+            exit 2
+            ;;
+    esac
+done
+exit 0
+

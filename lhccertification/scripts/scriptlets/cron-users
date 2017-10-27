@@ -1,0 +1,67 @@
+#!/bin/bash
+#
+# - - -
+# authority: HHS/AC-3,6
+# authority: CIS/7.5
+# authority: CIS5/8.4
+# description: Checks existence and contents of cron.allow
+# option: cron_allow_users comma-separated list of users (besides root)
+# - - -
+set -e 
+
+. `dirname $0`/../../lib/functions
+
+# Default option values:
+if [ -z "$cron_allow_users" ] ; then
+    cron_allow_users=
+fi
+
+check()
+{
+    # Anything written to stdout or stderr indicates a compliance problem.
+
+    echo "))= cron.deny should NOT exist:"
+    ls -l /etc/cron.deny 2>/dev/null || :
+
+    # Check that cron.allow exists.
+    # If it doesn't exist, suggest a simple one.
+    # If it already exists, its contents do not matter (but mode matters).
+    # The "correct" set of users is too various to encode here.
+
+    cron_allow_real=/etc/cron.allow
+    cron_allow_scratch=$(scratchfile $cron_allow_real)
+
+    if [ -f "$cron_allow_real" ] ; then
+        # Permissions:
+        check_user_group_perms root root 0400 $cron_allow_real
+    else
+        echo root > ${cron_allow_scratch}..tmp
+        echo $cron_allow_users | tr "," "\n" >> ${cron_allow_scratch}..tmp
+        # Sort... and weed out the blank line that seems to seep in:
+        sort ${cron_allow_scratch}..tmp | egrep '.+' >${cron_allow_scratch}
+        rm ${cron_allow_scratch}..tmp
+
+        # Compare actual (which might not exist) against ideal:
+        sort ${cron_allow_real} >/tmp/cron.allow..tmp 2>/dev/null || :
+        echo "))= Deviant (<) and expected (>) contents of jumbled-up ${cron_allow_real}:"
+        diff -b /tmp/cron.allow..tmp ${cron_allow_scratch} || :
+        echo "))  A modified file for your review is at ${cron_allow_scratch}."
+        rm /tmp/cron.allow..tmp
+    fi
+
+}
+
+while [ -n "$1" ] ; do
+    case "$1" in 
+        check)
+            check
+            break
+            ;;
+        *)
+            echo "Usage: $0 {check|fix}"
+            exit 2
+            ;;
+    esac
+done
+exit 0
+

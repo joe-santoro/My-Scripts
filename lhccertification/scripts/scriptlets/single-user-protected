@@ -1,0 +1,54 @@
+#!/bin/bash
+#
+# - - -
+# authority: HHS/AC-3,3
+# authority: CIS/7.11
+# authority: CIS5/8.8
+# description: Detects whether single-user mode requires a password
+# - - -
+set -e
+
+. `dirname $0`/../../lib/functions
+
+check()
+{
+    # Anything written to stdout or stderr indicates a compliance problem.
+    
+    # RHEL6 comes with upstart
+    # RHEL5 comes with SysVinit
+
+    if   rpm -q upstart >/dev/null  ; then
+
+        initconf_real=/etc/sysconfig/init
+        initconf_scratch=$(scratchfile $initconf_real)
+
+        perl -e '$sulogin_found=0; while(<>){ if (/^SINGLE=/) { print qq(SINGLE=/sbin/sulogin\n); $sulogin_found=1; } else { print; } } if (!$sulogin_found) {print qq(SINGLE=/sbin/sulogin\n);} ' <"$initconf_real" >"$initconf_scratch"
+
+        report_diff $initconf_real $initconf_scratch
+
+    else
+        
+        inittab_real=/etc/inittab
+        inittab_scratch=$(scratchfile $inittab_real)
+        if [ "`grep -l sulogin $inittab_real`" == "" ] ; then
+            awk '{print} 
+             /^id:/ { print "~~:S:wait:/sbin/sulogin" }' \
+                 $inittab_real > $inittab_scratch
+        fi
+        
+        report_diff $inittab_real $inittab_scratch
+        
+        check_user_group_perms root root 0600 $inittab_real
+    fi
+}
+
+case "$1" in 
+    check)
+        check;
+        ;;
+    *)
+        echo "Usage: $0 {check|fix}"
+        ;;
+esac
+exit 0
+

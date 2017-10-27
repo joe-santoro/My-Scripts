@@ -1,0 +1,118 @@
+#!/bin/bash
+#
+# - - -
+# authority: Local/10
+# description: Checks configuration of the nlmlhcnscanner account
+# - - -
+
+set -e
+
+. `dirname $0`/../../lib/functions
+
+check()
+{
+    # Anything written to stdout or stderr indicates a compliance problem.
+
+    # Gather lots of results to a temporary file.
+    # Compare with an expected-results file.
+
+    actual=$(scratchfile "/tmp/nlmlhcnscanner-actual")
+    
+    #EXACT MATCH
+    #bash-3.2# grep nlmlhcnscanner /etc/passwd
+    #nlmlhcnscanner:x:1521:1521:NLM LHC NSCANNER, CR:/export/home/nlmlhcnscanner:/bin/bash
+    echo "*** /etc/passwd:" >$actual 2>&1
+    grep nlmlhcnscanner /etc/passwd >>$actual 2>&1 || :
+    echo "" >>$actual 2>&1
+
+    #SHADOW PASSWORD SHOULD NOT BE MATCHED AGAINST.  THIS IS THE SECOND FIELD
+    #bash-3.2# grep nlmlhcnscanner /etc/shadow
+    #nlmlhcnscanner:$6$iRdqWrXR$RKrg9UQrgrqRNyOeZ74EQcarA0bzXo5AWlQSZYIfDWM4a7GYaCcFnZJedneSjpVEdkulUsclkxeQbsbikj.HI.:15099:0:99999:7:::
+    echo "*** /etc/shadow:" >>$actual 2>&1
+    ( ( grep nlmlhcnscanner /etc/shadow || : ) \
+        | cut -d : -f 1,3- ) >>$actual 2>&1
+    echo "" >>$actual 2>&1
+
+    #EXACT MATCH
+    #bash-3.2# grep nlmlhcnscanner /etc/group
+    #nlmlhcnscanner:x:1521:nlmlhcnscanner
+    echo "*** /etc/group:" >>$actual 2>&1
+    grep nlmlhcnscanner /etc/group >>$actual 2>&1 || :
+    echo "" >>$actual 2>&1
+
+    #NEEDS TO VERIFY THAT ACCOUNT EXISTS IN VARIABLE STRING
+    #bash-3.2# grep nlmlhcnscanner /etc/sd_pam.conf
+    #LIST_OF_GROUPS=root:nlmlhcnscanner:nlmlhcscxml
+    echo "*** /etc/sd_pam.conf:" >>$actual 2>&1
+    ( ( grep '^LIST_OF_GROUPS=.*nlmlhcnscanner' /etc/sd_pam.conf || : ) \
+        | cut -d = -f 2 \
+        | awk 'BEGIN {RS=":"} {print}' \
+        | (grep '^nlmlhcnscanner$' || : ) ) >>$actual 2>&1
+    echo "" >>$actual 2>&1
+    
+    #EXACT MATCH
+    #bash-3.2# grep nlmlhcnscanner /etc/sudoers
+    #nlmlhcnscanner  ALL=(ALL)       ALL
+    echo "*** /etc/sudoers:" >>$actual 2>&1
+    ( ( grep nlmlhcnscanner /etc/sudoers || : ) \
+        | perl -ne 's/\s+/ /g; print' ) >>$actual 2>&1
+    echo "" >>$actual 2>&1
+    echo "" >>$actual 2>&1
+    
+    #EXACT PERMISSIONS MATCH
+    #bash-3.2# ls -ld /export
+    #drwxr-xr-x 3 root root 4096 Jan 15  2010 /export
+    echo "*** /export permissions:" >>$actual 2>&1
+    stat -c %A /export >>$actual 2>&1 || :
+    echo "" >>$actual 2>&1
+
+    #EXACT PERMISSIONS MATCH
+    #bash-3.2# ls -ld /export/home
+    #drwxr-xr-x 6 root root 4096 Oct 17 16:39 /export/home
+    echo "*** /export/home permissions:" >>$actual 2>&1
+    stat -c %A /export/home >>$actual 2>&1 || :
+    echo "" >>$actual 2>&1
+
+    #EXACT PERMISSIONS/OWNERSHIP MATCH
+    #bash-3.2# ls -ld /export/home/nlmlhcnscanner
+    #drwx------ 3 nlmlhcnscanner nlmlhcnscanner 4096 May 23  2012 /export/home/nlmlhcnscanner
+    echo "*** /export/home/nlmlhcnscanner permissions, owner, group:" >>$actual 2>&1
+    stat -c '%A %U %G' /export/home/nlmlhcnscanner >>$actual 2>&1 || :
+    echo "" >>$actual 2>&1
+
+    #EXACT PERMISSIONS/OWNERSHIP MATCH
+    #bash-3.2# ls -ld /export/home/nlmlhcnscanner/.ssh
+    #drwx------ 2 nlmlhcnscanner nlmlhcnscanner 4096 Oct 17 16:42 /export/home/nlmlhcnscanner/.ssh
+    #EXACT PERMISSIONS/OWNERSHIP MATCH
+    #bash-3.2# ls -lal /export/home/nlmlhcnscanner/.ssh
+    #total 12
+    #drwx------ 2 nlmlhcnscanner nlmlhcnscanner 4096 Oct 17 16:42 .
+    #drwx------ 3 nlmlhcnscanner nlmlhcnscanner 4096 May 23  2012 ..
+    #-rwx------ 1 nlmlhcnscanner nlmlhcnscanner  396 Dec 18 13:36 authorized_keys
+    echo "*** /export/home/nlmlhcnscanner/.ssh:" >>$actual 2>&1
+    ( find /export/home/nlmlhcnscanner/.ssh -exec stat -c '%A %U %G %n' {} \; \
+        | sort ) >>$actual 2>&1
+    echo "" >>$actual 2>&1
+    
+    #EXACT CONTENT MATCH
+    #bash-3.2# cat /export/home/nlmlhcnscanner/.ssh/authorized_keys
+    #ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAm0kFlTjdbSUKzfFVqOeSlT+Fp9GML/dOdsAEnkxxDn/B/EFi23w67mpz2+0s8Fhi6GrKQosvlyjgykHy5hERgBKwrdnRKTrXbFkPhxhqWWPMl+aCq2n+CImqn1mnWNoIN0j157MU8XIm+/r+08f5yxqcSAKb9DX4WEnuqSjKHK9XoVRkt5ZGxh+0bODyqV1ow7O6DQaU58GiKtNK0UImbz7igVmuf5XutgDoE0g4yjDfdnHrmUVD/qOJs1OtPG4krnoV3ZwhD4Vsf/g9xI2QrOjpw0pne2MD77r7aUH4CXFOiAhvnYCuy+QmHJFOxNDuijjr5xNIpl/ANpxtdKNcEQ== nlmlhcnscanner
+    echo "*** /export/home/nlmlhcnscanner/.ssh/authorized_keys:" >>$actual 2>&1
+    cat /export/home/nlmlhcnscanner/.ssh/authorized_keys >>$actual 2>&1 || :
+    echo "" >>$actual 2>&1
+    
+    expected=`dirname $0`/../../lib/resources/nlmlhcnscanner-expected
+
+    report_diff $actual $expected
+}
+
+case "$1" in 
+    check)
+        check;
+        ;;
+    *)
+        echo "Usage: $0 {check|fix}"
+        ;;
+esac
+exit 0
+

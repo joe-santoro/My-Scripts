@@ -1,0 +1,30 @@
+#!/bin/bash
+#
+# - - -
+# authority: CIS/3.1
+# authority: CIS5/4.1
+# description: Checks /etc/rc.d/init.d/functions for a good umask
+# - - -
+set -e
+
+. `dirname $0`/../../lib/functions
+
+check()
+{
+    # Anything written to stdout or stderr indicates a compliance problem.
+
+    # umask 027 is recommended by CIS5
+    init_d_functions_real=/etc/rc.d/init.d/functions
+    echo "))= umask 027 is expected for daemons. In $init_d_functions_real, here are the lines that contain 'umask':"
+    suggest_umask_027 $init_d_functions_real
+}
+
+case "$1" in 
+    check)
+        check;
+        ;;
+    *)
+        echo "Usage: $0 {check|fix}"
+        ;;
+esac
+exit 0

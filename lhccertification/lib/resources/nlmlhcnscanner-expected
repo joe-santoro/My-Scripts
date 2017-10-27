@@ -1,0 +1,31 @@
+*** /etc/passwd:
+nlmlhcnscanner:x:1521:1521:NLM LHC NSCANNER, CR:/export/home/nlmlhcnscanner:/bin/bash
+
+*** /etc/shadow:
+nlmlhcnscanner:15099:0:99999:7:::
+
+*** /etc/group:
+nlmlhcnscanner:x:1521:nlmlhcnscanner
+
+*** /etc/sd_pam.conf:
+nlmlhcnscanner
+
+*** /etc/sudoers:
+nlmlhcnscanner   ALL= NOPASSWD: ALL
+
+*** /export permissions:
+drwxr-xr-x
+
+*** /export/home permissions:
+drwxr-xr-x
+
+*** /export/home/nlmlhcnscanner permissions, owner, group:
+drwx------ nlmlhcnscanner nlmlhcnscanner
+
+*** /export/home/nlmlhcnscanner/.ssh:
+drwx------ nlmlhcnscanner nlmlhcnscanner /export/home/nlmlhcnscanner/.ssh
+-rwx------ nlmlhcnscanner nlmlhcnscanner /export/home/nlmlhcnscanner/.ssh/authorized_keys
+
+*** /export/home/nlmlhcnscanner/.ssh/authorized_keys:
+ssh-rsa xxx nlmlhcnscanner
+

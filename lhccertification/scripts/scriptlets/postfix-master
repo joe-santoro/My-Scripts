@@ -1,0 +1,60 @@
+#!/bin/bash
+#
+# - - -
+# authority: Local/8
+# description: Checks postfix for 'smtp' and 'local' services
+
+# - - -
+set -e 
+
+. `dirname $0`/../../lib/functions
+
+check()
+{
+    # Anything written to stdout or stderr indicates a compliance problem.
+
+    master_cf_real=/etc/postfix/master.cf
+
+    # Commenting-out lines in master.cf is complicated because
+    # you have to comment out the continuation lines too,
+    # and they might be separated by lines that are already comments.
+    
+    # Here - Slurp master.cf into a Perl array where each element
+    # is either a comment (of however many lines) or a service declaration
+    # (of however many lines, some of which might already be comments).
+
+    # Then force all lines of certain service declarations to be comments.
+    if [ -f "$master_cf_real" ] ; then
+        echo "))= Postfix ought not have 'smtp' or 'local' service enabled:"
+
+        master_cf_scratch=$(scratchfile $master_cf_real)
+        perl -e '
+sub flush_p { if (defined($p)) {push(@L,$p);} $p=""; } 
+while(<>) { 
+  if (/\s*#/) { $p.=$_; } 
+  elsif (/^\s/) {$p .= $_;} 
+  else { flush_p(); $p=$_; } 
+}
+flush_p();
+@M=map( do{ if(/^(smtp|local)/) {s/^/#/sg; $_} else {$_}}, @L); 
+print join("", @M);' \
+<"$master_cf_real" >"$master_cf_scratch"
+        
+        report_diff $master_cf_real $master_cf_scratch
+    fi
+}
+
+while [ -n "$1" ] ; do
+    case "$1" in 
+        check)
+            check
+            break
+            ;;
+        *)
+            echo "Usage: $0 {check|fix}"
+            exit 2
+            ;;
+    esac
+done
+exit 0
+

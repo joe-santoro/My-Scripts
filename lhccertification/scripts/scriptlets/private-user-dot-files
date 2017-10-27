@@ -1,0 +1,38 @@
+#!/bin/bash
+#
+# - - -
+# authority: LHC/1.37
+# description: Checks certain well-known dot files in user directories
+# - - -
+set -e
+
+. `dirname $0`/../../lib/functions
+
+check()
+{
+    # Anything written to stdout or stderr indicates a compliance problem.
+
+    # .history is read by tcsh.
+    # .bash_history is read by bash (overridden by HISTFILE)
+    echo "))= Deviant permissions: History files hould not allow group or other read/write/execute:"
+    for dir in `awk -F: '($3 >= $uid_threshold) { print $6 }' /etc/passwd` 
+      do 
+      find $dir -mindepth 1 -maxdepth 1 \
+          \( -name .history -o -name .bash_history \) -type f -perm /077 -ls
+    done 
+}
+
+while [ -n "$1" ] ; do
+    case "$1" in 
+        check)
+            check
+            break
+            ;;
+        *)
+            echo "Usage: $0 {check|fix}"
+            exit 2
+            ;;
+    esac
+done
+exit 0
+

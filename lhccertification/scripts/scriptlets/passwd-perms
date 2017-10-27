@@ -1,0 +1,56 @@
+#!/bin/bash
+#
+# - - -
+# authority: CIS/6.4
+# authority: CIS5/7.4
+# description: Confirms permissions on passwd, shadow, and group files
+# - - -
+set -e
+
+. `dirname $0`/../../lib/functions
+
+check()
+{
+    # Anything written to stdout or stderr indicates a compliance problem.
+
+
+    guess_RH_version
+
+    case "$RH" in
+        4)
+            SHADOW_BITS=0400
+            ;;
+        5)
+            SHADOW_BITS=0400
+            ;;
+        6)
+            SHADOW_BITS=0000
+            ;;
+        7)
+            SHADOW_BITS=0000
+            ;;
+        *)
+            SHADOW_BITS=0400
+            ;;
+    esac
+    
+
+    check_user_group_perms root root 0644 /etc/passwd
+
+    check_user_group_perms root root 0644 /etc/group
+
+    check_user_group_perms root root $SHADOW_BITS /etc/shadow
+
+    check_user_group_perms root root $SHADOW_BITS /etc/gshadow
+}
+
+case "$1" in 
+    check)
+        check;
+        ;;
+    *)
+        echo "Usage: $0 {check|fix}"
+        ;;
+esac
+exit 0
+

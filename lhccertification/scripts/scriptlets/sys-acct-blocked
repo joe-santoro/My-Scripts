@@ -1,0 +1,73 @@
+#!/bin/bash
+#
+# - - -
+# authority: CIS/8.1
+# authority: CIS5/9.1
+# authority: LHC/1.5
+# authority: LHC/1.6
+# authority: LHC/1.7
+# description: Checks that system account passwords are locked and shell is not a valid shell
+# option: uid_threshold Lowest UID of a normal (non-system) user
+# - - -
+set -e
+
+. `dirname $0`/../../lib/functions
+
+# Default option values:
+if [ -z "$uid_threshold" ] ; then
+    uid_threshold=500
+fi
+
+check()
+{
+    # Anything written to stdout or stderr indicates a compliance problem.
+
+    guess_RH_version
+
+    for name in `grep -v ^+ /etc/passwd | cut -d: -f1`; do
+        uid=`id -u $name`
+        if [ $uid -lt $uid_threshold -a $uid != '0' ]; then
+            # RHEL5 uses "!"
+            # RHEL6 uses "*" for some accounts
+            # Check for "!" or "*" before encrypted password:
+            echo "))= Non-locked system account, i.e., password field does not start with ! or * in /etc/shadow:"
+            grep -qE "^${name}:(\*|\!)" /etc/shadow || \
+                grep "^${name}:" /etc/shadow 
+            # Check for shell not /dev/null:
+            echo "))= System account whose shell is not /dev/null or /sbin/nologin in /etc/passwd:"
+            theirshell=$(grep "^${name}:" /etc/passwd | cut -d: -f 7)
+            expectedshell=
+            if [ "$RH" == "6" ] ; then
+                case $name in
+                    sync)     expectedshell=/bin/sync;;
+                    shutdown) expectedshell=/sbin/shutdown;;
+                    halt)     expectedshell=/sbin/halt;;
+                    postfix)  expectedshell=/bin/true;;
+                    *)        expectedshell=
+                esac
+            fi
+            if [ -n "$expectedshell" -a "$expectedshell" == "$theirshell" ] 
+                then :
+            elif [ "/dev/null" != "$theirshell" \
+                -a "/sbin/nologin" != "$theirshell" \
+                -a "/bin/false" != "$theirshell" ]; then
+                grep "^${name}:" /etc/passwd
+            fi
+        fi
+    done
+}
+
+while [ -n "$1" ] ; do
+    case "$1" in 
+        check)
+            check
+            break
+            ;;
+        *)
+            echo "Usage: $0 {check|fix}"
+            exit 2
+            ;;
+    esac
+done
+exit 0
+

@@ -1,0 +1,40 @@
+#!/bin/bash
+#
+# - - -
+# authority: HHS/AC-3,8
+# authority: CIS/7.10
+# authority: CIS5/8.7
+# description: Checks grub.conf
+# - - -
+set -e
+
+. `dirname $0`/../../lib/functions
+
+check()
+{
+    # Anything written to stdout or stderr indicates a compliance problem.
+
+    # The password= line should be the first non-comment.
+
+    if [ -f /etc/grub.conf ] ; then
+        if [ "`perl -ne 'print if (1../^\s*\#/)' /etc/grub.conf | grep -v '^\s*\#' | grep -c password=`" = "0" ] ; then
+            echo "Please insert password=xxx (see manpage for /sbin/grub-md5-crypt) before first uncommented line in grub.conf"
+        fi
+
+        check_user_group_perms root root 0600 /etc/grub.conf
+    fi
+    if [ -f /etc/lilo.conf ] ; then
+        echo "TBD how to check lilo.conf?"
+    fi
+}
+
+case "$1" in 
+    check)
+        check;
+        ;;
+    *)
+        echo "Usage: $0 {check|fix}"
+        ;;
+esac
+exit 0
+

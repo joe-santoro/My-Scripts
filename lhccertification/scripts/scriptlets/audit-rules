@@ -1,0 +1,77 @@
+#!/bin/bash
+#
+# - - -
+# authority: CIS5/11.1
+# description: Checks audit.rules
+
+set -e
+
+. `dirname $0`/../../lib/functions
+
+check()
+{
+    # Anything written to stdout or stderr indicates a compliance problem.
+
+    # Skip the check for auditd on x86_64 architecture pending discovery of the proper auditd.rules:
+    if [ "$(uname -i)" != 'i386' ] ; then
+        exit 0
+    fi
+
+    auditpath=
+    if [ -e /etc/audit.rules ] ; then 
+        auditpath=/etc
+    elif [ -e /etc/audit/audit.rules ] ; then
+        auditpath=/etc/audit
+    fi
+
+    if [ -n "$auditpath" ] ; then
+        auditrules_real=$auditpath/audit.rules
+        auditrules_scratch=$(scratchfile $auditrules_real)
+
+        # Observe or add "-e 1" to turn on auditing.
+        # Note - auditctl man page says to group the settings into as few rules as possible.
+        perl -e '
+@L=("-a exit,always -S open -F success!=0",
+    "-w /var/log/audit/",
+    "-w /etc/auditd.conf",
+    "-w /etc/audit.rules",
+    "-a exit,always -S acct -S chmod -S chown -S chown32 -S fchmod -S fchown -S fchown32 -S lchown -S lchown32 -S reboot -S rmdir -S sched_setparam -S sched_setscheduler -S setdomainname -S setrlimit -S settimeofday -S stime -S swapon -S unlink");
+%L=map($_=>$_, @L);
+while(<>) {
+  if (!/^\s*#/ && /-e /) { $_="-e 1\n"; $seen_e=1 }
+
+  if (!/^\s*#/ && /-b (\d+)/) { 
+     if ($1 < 1024) { $_="-b 1024\n"; }
+     $seen_b=1 
+  }
+  
+  print;
+  chomp;
+  delete $L{$_};
+}
+if (!$seen_e) { print "-e 1\n"; }
+if (!$seen_b) { print "-b 1024\n"; }
+foreach (@L) {
+  if (exists($L{$_})) {
+    print "$_\n";
+    delete $L{$_};
+  }
+}
+' $auditrules_real >$auditrules_scratch
+
+        report_diff $auditrules_real $auditrules_scratch 
+
+        check_user_group_perms root root 0600 $auditrules_real
+    fi
+}
+
+case "$1" in 
+    check)
+        check;
+        ;;
+    *)
+        echo "Usage: $0 {check|fix}"
+        ;;
+esac
+exit 0
+

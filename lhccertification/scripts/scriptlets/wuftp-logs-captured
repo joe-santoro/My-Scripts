@@ -1,0 +1,40 @@
+#!/bin/bash
+#
+# - - -
+# authority: CIS/5.2
+# description: Checks settings for wu-ftpd
+# - - -
+set -e
+
+. `dirname $0`/../../lib/functions
+
+check()
+{
+    # Anything written to stdout or stderr indicates a compliance problem.
+
+    # Compose an ideal wu-ftpd:
+    wuftpd_real=/etc/xinetd.d/wu-ftpd
+    wuftpd_scratch=$(scratchfile $wuftpd_real)
+
+    if [ -f /etc/ftpaccess ] ; then 
+        awk '/server_args/ \
+                  { print " server_args = -l -a -d" ; next }; 
+                  { print }' $wuftpd_real >$wuftpd_scratch
+
+        # Compare actual against ideal:
+        report_diff $wuftpd_real $wuftpd_scratch
+
+        check_user_group_perms root root 0644 $wuftpd_real
+    fi 
+}
+
+case "$1" in 
+    check)
+        check;
+        ;;
+    *)
+        echo "Usage: $0 {check|fix}"
+        ;;
+esac
+exit 0
+

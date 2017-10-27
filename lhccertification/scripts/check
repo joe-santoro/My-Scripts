@@ -1,0 +1,20 @@
+#!/bin/bash
+
+dir=$(dirname $0)
+script="check.pl"
+
+echo "Installing pre-requisite packages based on system-type.."
+
+RHEL_VER=$(cat /etc/redhat-release | awk '{ print $7 }' | awk -F. '{ print $1 }')
+
+if [ "$RHEL_VER" = "7" ] ; then
+    yum -y install perl-Data-Dumper
+elif [ "$RHEL_VER" = "6" ] ; then
+    yum -y install perl
+elif [ "$RHEL_VER" = "5" ] ; then
+    yum -y install perl
+else 
+    echo "Not on Redhat Linux, skipping any yum commands..."
+fi
+
+$dir/$script $*

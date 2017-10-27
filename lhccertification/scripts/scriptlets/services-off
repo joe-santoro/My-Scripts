@@ -1,0 +1,224 @@
+#!/bin/bash
+#
+# - - -
+# authority: CIS/2.1
+# authority: CIS5/3.1
+# description: Checks that a service is disabled (chkconfig shows no "on" runlevels)
+# variant: amanda
+# variant: chargen
+# variant: chargen-udp 
+# variant: cups
+# variant: cups-lpd
+# variant: daytime
+# variant: daytime-udp
+# variant: echo
+# variant: echo-udp
+# variant: eklogin
+# variant: ekrb5-telnet
+# variant: finger
+# variant: gssftp
+# variant: imap
+# variant: imaps
+# variant: ipop2
+# variant: ipop3
+# variant: klogin
+# variant: krb5-telnet
+# variant: kshell
+# variant: ktalk
+# variant: ntalk
+# variant: pop3s
+# variant: servers
+# variant: services
+# variant: sgi_fam
+# variant: talk
+# variant: tcpmux-server
+# variant: time
+# variant: time-dgram
+# variant: time-stream
+# variant: time-udp
+
+# authority: CIS/2.1
+# authority: CIS5/3.1
+# authority: HHS/SC-8,1
+# variant: rexec
+# variant: rlogin
+# variant: rsh
+# variant: rsync
+# variant: telnet
+# variant: tftp
+# variant: uucp
+# variant: vsftpd
+# variant: wu-ftpd
+
+# authority: CIS/3.5
+# authority: CIS5/4.5
+# variant: xfs
+
+# authority: HHS/CM-7,7
+# authority: CIS/3.6
+# authority: CIS5/4.6
+### note: CIS5/4.6 is unclear. Its comment directly contradicts the script.
+# authority: LHC/1.1
+# authority: LHC/1.29
+# variant: FreeWnn
+# variant: NetworkManager
+# variant: acpid
+# variant: amd
+# variant: anacron
+# variant: apache
+# variant: apmd
+# variant: aprwatch
+# variant: arptables_jf
+# variant: atd
+# variant: avahi-daemon
+# variant: avahi-dnsconfd
+# variant: bluetooth
+# variant: bootparamd
+# variant: bpgd
+# variant: canna
+# variant: capi
+# variant: conman
+# variant: cups
+# variant: cyrus-imapd
+# variant: dc_client
+# variant: dc_server
+# variant: dhcdbd
+# variant: dhcp6s
+# variant: dhcpd
+# variant: dhcrelay
+# variant: dovecot
+# variant: dund
+# variant: firstboot
+# variant: gpm 
+# variant: haldaemon
+# variant: hidd
+# variant: hplip
+# variant: hpoj
+# variant: httpd 
+# variant: ibmasm
+# variant: innd
+# variant: ip6tables
+# variant: ipmi
+# variant: irda
+# variant: iscsi
+# variant: iscsid
+# variant: isdn
+# variant: kadmin
+# variant: kdcrotate
+# variant: kdump
+# variant: kprop
+# variant: krb524
+# variant: krb5kdc
+# variant: kudzu
+# variant: ldap
+# variant: lisa
+# variant: lm_sensors
+# variant: lpd
+# variant: lvs
+# variant: mailman
+# variant: mars-nwe
+# variant: mcstrans
+# variant: mdmonitor
+# variant: mdmpd
+# variant: multipathd
+# variant: mysqld
+# variant: named
+# variant: netfs
+# variant: netplugd
+# variant: network
+# variant: nscd
+# variant: ntpd
+# variant: oki4daemon 
+# variant: openidb
+# variant: ospf6d
+# variant: ospfd
+# variant: pand
+# variant: portmap
+# variant: rpcbind
+# variant: postgresql
+# variant: privoxy
+# variant: psacct
+# variant: radvd
+# variant: rarpd
+# variant: rdisc
+# variant: readahead_early
+# variant: readahead_later
+# variant: rhnsd
+# variant: ripd
+# variant: ripngd
+# variant: rpcgssd
+# variant: rpcidmapd
+# variant: rpcsvcgssd
+# variant: rstatd
+# variant: rusersd
+# variant: rwalld
+# variant: rwhod
+# variant: saslauthd
+# variant: sendmail
+# variant: postfix
+# variant: setroubleshoot
+# variant: smartd
+# variant: smb
+# variant: snmpd
+# variant: snmptrapd
+# variant: spamassassin
+# variant: squid
+# variant: tog-pegasus
+# variant: tomcat5
+# variant: tux 
+# variant: webmin
+# variant: winbind
+# variant: wine
+# variant: wine
+# variant: wpa_supplicant
+# variant: xend
+# variant: xendomains
+# variant: ypbind
+# variant: ypbind 
+# variant: yppasswdd
+# variant: yppasswdd 
+# variant: ypserv
+# variant: ypserv 
+# variant: ypxfrd
+# variant: yum-updatesd
+# variant: zebra
+
+# authority: CIS/3.6
+# authority: CIS5/4.6
+# authority: LHC/1.19
+# variant: nfs
+# variant: nfslock
+# variant: autofs
+
+# - - -
+set -e
+
+. `dirname $0`/../../lib/functions
+
+check()
+{
+    # Anything written to stdout or stderr indicates a compliance problem.
+
+    VARIANT=$1
+    shift
+
+    if [ -z "$VARIANT" ] ; then
+        echo "Variant not specified"
+        exit 2
+    fi
+    echo "))= Service is not disabled:"
+    ( ( /sbin/chkconfig --list $VARIANT 2>/dev/null ) | grep :on ) || :
+}
+
+case "$1" in 
+    check)
+        shift
+        check $*
+        ;;
+    *)
+        echo "Usage: $0 {check|fix}"
+        exit 2
+        ;;
+esac
+exit 0
+

@@ -1,0 +1,43 @@
+#!/bin/bash
+#
+# - - -
+# authority: CIS5/10.3
+# description: Checks banner in /etc/vsftpd/vsftpd.conf
+# - - -
+set -e
+
+. `dirname $0`/../../lib/functions
+
+check()
+{
+    # Anything written to stdout or stderr indicates a compliance problem.
+
+    # Gate: vsftpd is installed.
+    rpm -q vsftpd  >/dev/null  ||  return 0
+
+    echo "))= PAM's nullok flag accepts empty passwords. Remove it!"
+    WELCOME=""
+    vsftpdconf_real=/etc/vsftpd/vsftpd.conf
+    if [ -f $vsftpdconf_real ] ; then
+        vsftpdconf_scratch=$(scratchfile $vsftpdconf_real)
+        awk 'BEGIN { seen=0 }
+             /^ftpd_banner=/ { $0="ftpd_banner=Authorized uses only. All activity may be monitored and reported."; seen=1 } 
+             { print }
+             END { if (!$seen) { print "ftpd_banner=Authorized uses only. All activity may be monitored and reported." } } ' $vsftpdconf_real >$vsftpdconf_scratch
+        
+        report_diff $vsftpdconf_real $vsftpdconf_scratch
+        
+        check_user_group_perms root root 0600 $vsftpdconf_real
+    fi
+}
+
+case "$1" in 
+    check)
+        check;
+        ;;
+    *)
+        echo "Usage: $0 {check|fix}"
+        ;;
+esac
+exit 0
+

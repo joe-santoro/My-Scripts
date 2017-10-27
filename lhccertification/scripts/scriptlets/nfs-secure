@@ -1,0 +1,44 @@
+#!/bin/bash
+#
+# - - -
+# authority: CIS/7.12
+# authority: CIS5/8.9
+# description: Checks exports for lines missing "secure"
+# - - -
+# note: some similarity to LHC/1.23, which also requires nosuid with NFS?
+
+set -e 
+
+. `dirname $0`/../../lib/functions
+
+check()
+{
+    # Anything written to stdout or stderr indicates a compliance problem.
+
+    ## Skip the check if NFS server is disabled:
+    ## (Note: the "nfslock" daemon runs on the client too; not germane to this test.)
+    guess_RH_version
+
+    [ "$RH" -le 6 ] && nfs_status="/sbin/chkconfig --list nfs | grep -q '5:on'"
+    [ "$RH" -eq 7 ] && nfs_status="/sbin/service nfs status"
+
+    if $nfs_status &> /dev/null ; then
+        echo "))= Exports entries missing 'secure':"
+        # Ignore comments and blank lines (syntax: see 'man exports'):
+        grep -v '^ *#' /etc/exports | grep -v '^ *$' | grep -v secure || :
+
+        # Permissions:
+        check_user_group_perms root root 0644 /etc/exports
+    fi
+}
+
+case "$1" in 
+    check)
+        check;
+        ;;
+    *)
+        echo "Usage: $0 {check|fix}"
+        ;;
+esac
+exit 0
+

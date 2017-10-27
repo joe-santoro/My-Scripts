@@ -1,0 +1,91 @@
+#!/bin/bash
+#
+# - - -
+# authority: CIS/8.3
+# authority: CIS5/9.3
+# description: Checks shadow password suite configuration
+# option: pass_max_days PASS_MAX_DAYS value for login.defs
+# option: pass_min_days PASS_MIN_DAYS value for login.defs
+# option: pass_min_len PASS_MIN_LEN value for login.defs
+# option: pass_warn_age PASS_WARN_AGE value for login.defs
+
+# - - -
+set -e 
+
+. `dirname $0`/../../lib/functions
+
+# Default option values come from CIS5:
+if [ -z "$pass_max_days" ] ; then
+    pass_max_days=60
+fi
+if [ -z "$pass_min_days" ] ; then
+    pass_min_days=1
+fi
+if [ -z "$pass_min_len" ] ; then
+    pass_min_len=15
+fi
+if [ -z "$pass_warn_age" ] ; then
+    pass_warn_age=14
+fi
+
+check()
+{
+    # Anything written to stdout or stderr indicates a compliance problem.
+
+    # Hey! According to "man login.defs", login.defs is NO LONGER USED
+    # by "programs such as login(1), passwd(1) and su(1)"
+    # because you're supposed to do the same with pam.
+    # However, pam's pam_tally has complications with the screensaver.
+
+    # Note:
+    # Similar checks also need to be done on /etc/passwd (by another scriptlet)
+
+    # Compose ideal login.defs by filtering the original:
+    login_defs_real=/etc/login.defs
+    login_defs_scratch=$(scratchfile $login_defs_real)
+    cp $login_defs_real ${login_defs_scratch}
+    for keyEqVal in \
+        PASS_MAX_DAYS=$pass_max_days \
+        PASS_MIN_DAYS=$pass_min_days \
+        PASS_MIN_LEN=$pass_min_len \
+        PASS_WARN_AGE=$pass_warn_age \
+        ; do 
+      key=$(echo $keyEqVal | cut -d = -f 1 )
+      expected_value=$(echo $keyEqVal | cut -d = -f 2 )
+      cp ${login_defs_scratch} ${login_defs_scratch}..tmp
+      awk "BEGIN { eureka=0 } 
+            (\$1 ~ /^$key/) { \$2=\"$expected_value\"; eureka=1 } 
+            { print } 
+           END { if (eureka==0) { print \"$key $expected_value\" } }" \
+               ${login_defs_scratch}..tmp >${login_defs_scratch}
+      rm ${login_defs_scratch}..tmp
+    done
+    
+    # Compare, blind to whitespace:
+    report_diff $login_defs_real $login_defs_scratch
+
+    check_user_group_perms root root 0640 $login_defs_real
+
+    # The number of days after a password expires before the account is disabled:
+    # Note:     FAIL_DELAY=5 no longer a valid option.
+    #if [ "7" != "$(useradd -D | grep INACTIVE)" ] ; then
+    #    echo "))= The command 'useradd -D' should indicate that an account will be disabled 7 days after its password expires. Here is the output of 'useradd -D | grep INACTIVE':"
+    #    useradd -D | grep INACTIVE
+    #fi
+
+}
+
+while [ -n "$1" ] ; do
+    case "$1" in 
+        check)
+            check
+            break
+            ;;
+        *)
+            echo "Usage: $0 {check|fix}"
+            exit 2
+            ;;
+    esac
+done
+exit 0
+

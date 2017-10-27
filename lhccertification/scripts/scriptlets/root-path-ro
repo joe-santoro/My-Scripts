@@ -1,0 +1,39 @@
+#!/bin/bash
+#
+# - - -
+# authority: HHS/AC-2,1b
+# authority: CIS/8.6
+# authority: CIS5/9.5
+# description: Spots group- or world-writable locations in the path.
+# - - -
+set -e
+
+. `dirname $0`/../../lib/functions
+
+check()
+{
+    # Anything written to stdout or stderr indicates a compliance problem.
+
+    echo "))= Deviant permissions of files on the PATH ($PATH): Should not allow group or world to execute:"
+    # Send find's error messages to a special file...
+    errors_scratch=$(scratchfile /tmp/root-path-ro-errors)
+    find ${PATH//:/ } -type f -perm /022 -ls 2>${errors_scratch} || :
+    # ...and suppress errors pertaining to /root/bin, which RHEL puts on the path but doesn't create!
+    # Error format keeps changing.
+    # RHEL4: "filename..."
+    # RHEL5: "find: filename ..."
+    # RHEL6: "find: `filename' ..."
+    egrep -v "^(find: )?.?/root/bin" ${errors_scratch} 2>/dev/null || :
+    rm ${errors_scratch}
+}
+
+case "$1" in 
+    check)
+        check;
+        ;;
+    *)
+        echo "Usage: $0 {check|fix}"
+        ;;
+esac
+exit 0
+

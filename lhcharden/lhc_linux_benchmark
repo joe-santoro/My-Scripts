@@ -1,0 +1,221 @@
+#!/bin/sh
+# This hardening script is based on the original v1.1.0 with the addition of HHS
+# Minimum requirement/LHC best practise. These changes are mainly based on the 
+# CISecurity benchmark for RHEL v5
+# Changes in each section are documented in the script of that section.
+# Main action changes:
+# 08/11/2008, added documentation to main section
+# 08/11/2008, added the HHS section menu
+PATH=$PATH:/bin:/usr/bin:/sbin:/usr/sbin
+_VERSION=$(cat ./VERSION)
+
+
+clear
+PublicServer=0
+InternalWks=0
+echo "lhcharden tool version $_VERSION" >> /tmp/lhcharden-`hostname`
+echo "">>/tmp/lhcharden-`hostname`
+echo "lhcharden tool version $_VERSION"
+echo "lhcharden release date: " $(echo $_VERSION | sed 's/\(..\)\(..\)\(.*\)/\1\/\2\/\3/')
+
+echo ""
+echo "All related configuration files need to be backed up before running this tool."
+echo "Do you want to back up the original configuration files ? (y/n)"
+read  console_in
+if test "$console_in" = "y"
+then
+      ./cis_linux_backup
+      echo "Backup completed."
+else
+      echo "Are you sure you don't want to backup the configuration files? (y/n) "
+      echo "Press RETURN to exit or 'y' to continue."
+      read console_in_2
+      if test "$console_in_2" = "y" 
+      then
+           echo "Running the scripts without backuping the configuration files."
+      else
+           exit
+      fi
+fi
+echo "Do you want to automatically harden the host, type yes or no"
+read option1
+if test "$option1" = "yes"
+then
+automatic=1
+echo "What type of the hardening for? PublicServer(1) or InternalWorkstion(2)(type 1 or 2)?"
+read option2
+if test "$option2" = "1"
+then 
+	target="1";
+fi
+if test "$option2" = "2"
+then 
+	target="2";
+fi
+#if ((test "$option2" != "1") && (test "$option2" !="2"))
+if [[ "${option2}" != "1" ]] && [[ "${option2}" != "2" ]]
+then
+echo " No valid type selected, use manual hardening"
+exit
+fi
+#user prefer automatic, 
+./cis_linux_1 $automatic $target
+./cis_linux_2 $automatic $target
+./cis_linux_3 $automatic $target
+./cis_linux_4 $automatic $target
+./cis_linux_5 $automatic $target
+./cis_linux_6 $automatic $target
+./cis_linux_7 $automatic $target
+./cis_linux_8 $automatic $target
+./cis_linux_9 $automatic $target
+./cis_linux_11 $automatic $target
+echo "Hardening Done"
+echo " Please check this file /tmp/lhcharden-`hostname`"
+cat /tmp/lhcharden-`hostname`
+exit
+fi
+
+menu1=0; menu2=0; menu3=0; menu4=0; menu5=0; menu6=0; menu7=0; menu8=0; menu9=0; menu10=0;menu11=0;
+
+until test "$console_in" = "0"
+do
+   #################### Main Menu ##########################
+   #clear
+   echo "          LHC Linux Benchmark v2.0.0"
+   echo "                Main Menu"
+   echo 
+
+   if test "$menu1" = 1 
+   then
+   echo "_X_ (1) 1. Patches"
+   else 
+   echo "___ (1) 1. Patches"
+   fi
+   if test "$menu2" = 1 
+   then
+   echo "_X_ (2) 2. Minimize 'xinetd' network services"
+   else 
+   echo "___ (2) 2. Minimize 'xinetd' network services"
+   fi
+   if test "$menu3" = 1 
+   then
+   echo "_X_ (3) 3. Minimize boot services"
+   else 
+   echo "___ (3) 3. Minimize boot services"
+   fi
+   if test "$menu4" = 1 
+   then
+   echo "_X_ (4) 4. Kernel Tunning"
+   else 
+   echo "___ (4) 4. Kernel Tunning"
+   fi
+   if test "$menu5" = 1 
+   then
+   echo "_X_ (5) 5. Logging" 
+   else 
+   echo "___ (5) 5. Logging" 
+   fi
+   if test "$menu6" = 1 
+   then
+   echo "_X_ (6) 6. File/Directory Permission/Access"
+   else 
+   echo "___ (6) 6. File/Directory Permission/Access"
+   fi
+   if test "$menu7" = 1 
+   then
+   echo "_X_ (7) 7. System Access, Authentication, and Authorization"
+   else 
+   echo "___ (7) 7. System Access, Authentication, and Authorization"
+   fi
+   if test "$menu8" = 1 
+   then
+   echo "_X_ (8) 8. User Accounts and Environment"
+   else 
+   echo "___ (8) 8. User Accounts and Environment"
+   fi
+   if test "$menu9" = 1 
+   then
+   echo "_X_ (9) 9. HHS/NIH and LHC requirement"
+   else 
+   echo "___ (9) 9. HHS/NIH and LHC requirement"
+   fi
+   if test "$menu10" = 1 
+   then
+   echo "_X_ (10) 10. misc ODDs and ENDs"
+   else 
+   echo "___ (10) 10. misc ODDs and ENDs"
+   fi
+   if test "$menu11" = 1
+   then
+   echo "_X_ (11) 11. Create/Configure NLM LHC Network Scanner Account"
+   else
+   echo "___ (11) 11. Create/Configure NLM LHC Network Scanner Account"
+   fi
+
+   echo "(0) Exit"
+   echo "Selection => "
+   read console_in
+  
+
+   if test "$console_in" = "1"
+   then
+      ./cis_linux_1
+      menu1=1
+   fi
+   if test "$console_in" = "2"
+   then
+      ./cis_linux_2
+      menu2=1
+   fi
+   if test "$console_in" = "3"
+   then
+      ./cis_linux_3
+      menu3=1
+   fi
+   if test "$console_in" = "4"
+   then
+      ./cis_linux_4
+      menu4=1
+   fi
+   if test "$console_in" = "5"
+   then
+      ./cis_linux_5
+      menu5=1
+   fi
+   if test "$console_in" = "6"
+   then
+      ./cis_linux_6
+      menu6=1
+   fi
+   if test "$console_in" = "7"
+   then
+      ./cis_linux_7
+      menu7=1
+   fi
+   if test "$console_in" = "8"
+   then
+      ./cis_linux_8
+      menu8=1
+   fi
+   if test "$console_in" = "9"
+   then
+      ./cis_linux_9
+      menu9=1
+   fi
+   if test "$console_in" = "10"
+   then
+      ./cis_linux_10
+      menu10=1
+   fi
+   if test "$console_in" = "11"
+   then
+      ./cis_linux_11
+      menu11=1
+   fi
+
+   
+done
+echo " Please check this file /tmp/lhcharden-`hostname`"
+echo " Please restart your host"
+cat /tmp/lhcharden-`hostname`
+/sbin/chkconfig --list

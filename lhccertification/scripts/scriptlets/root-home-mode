@@ -1,0 +1,42 @@
+#!/bin/bash
+#
+# - - -
+# authority: CIS5/11.3
+# description: Spots exposed home directories
+# - - -
+set -e
+
+. `dirname $0`/../../lib/functions
+
+# Default option values:
+if [ -z "$uid_threshold" ] ; then
+    uid_threshold=500
+fi
+if [ -z "$user_home_perm_prohibit" ] ; then
+    user_home_perm_prohibit="027"
+fi
+
+check()
+{
+    # Anything written to stdout or stderr indicates a compliance problem.
+
+    roothome=$(grep '^root' /etc/passwd | cut -d : -f 6)
+
+    echo "))= Deviant permissions: Should be root:root 0700:"
+    find $roothome -maxdepth 0 \! -perm 0700 -ls
+}
+
+while [ -n "$1" ] ; do
+    case "$1" in 
+        check)
+            check
+            break
+            ;;
+        *)
+            echo "Usage: $0 {check|fix}"
+            exit 2
+            ;;
+    esac
+done
+exit 0
+

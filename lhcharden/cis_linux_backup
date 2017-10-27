@@ -1,0 +1,45 @@
+#!/bin/sh
+PATH=$PATH:/bin:/usr/bin:/sbin:/usr/sbin
+
+echo "Start backing up the configuration files."
+
+ext=`date '+%Y%m%d-%H:%M:%S'`
+
+for file in /etc/inetd.conf /etc/hosts.equiv \
+	/etc/ftpusers /etc/passwd /etc/shadow /etc/hosts.allow \
+	/etc/hosts.deny /etc/proftpd.conf \
+	/etc/rc.d/init.d/functions /etc/inittab \
+	/etc/sysconfig/sendmail /etc/security/limits.conf \
+	/etc/exports /etc/sysctl.conf /etc/syslog.conf /etc/rsyslog.conf \
+	/etc/fstab /etc/security.console.perms /root/.rhosts \
+	/root/.shosts /etc/shosts.equiv /etc/X11/xdm/Xservers \
+	/etc/X11/xinit/xserverrc /etc/X11/gdm/gdm.conf \
+	/etc/cron.allow /etc/cron.deny /etc/at.allow \
+	/etc/at.deny /etc/crontab /etc/motd /etc/issue \
+	/usr/share/config/kdm/kdmrc /etc/X11/gdm/gdm.conf \
+	/etc/securetty /etc/security/access.conf /etc/lilo.conf \
+	/etc/grub.conf /etc/login.defs /etc/group /etc/profile \
+	/etc/csh.login /etc/csh.cshrc /etc/bashrc \
+	/etc/ssh/sshd_config /etc/ssh/ssh_config \
+	/etc/cups/cupsd.conf /etc/{,vsftpd/}vsftpd.conf \
+	/etc/logrotate.conf /root/.bashrc /root/.bash_profile \
+	/root/.cshrc /root/.tcshrc /etc/vsftpd.ftpusers \
+	/etc/audit/auditd.conf /etc/audit/audit.rules \
+	/etc/gdm/custom.conf /etc/motd /etc/modprobe.conf \
+	/etc/sysconfig/network /etc/pam.d/system-auth \
+	/etc/gconf/gconf.xml.mandatory /etc/aliases /etc/postfix/main.cf \
+        /etc/postfix/master.cf
+do 
+   [ -f $file ] && /bin/cp $file $file-preCIS-$ext 
+done 
+
+for dir in /etc/xinetd.d /etc/rc[0123456].d \
+	/var/spool/cron /etc/cron.* /etc/logrotate.d /var/log \
+	/etc/pam.d /etc/skel
+do 
+   [ -d $dir ] && /bin/cp -r $dir $dir-preCIS-$ext
+done 
+
+echo "Completed to back up the configuration files"
+echo "Press ENTER to continue"
+read console_in_tmp

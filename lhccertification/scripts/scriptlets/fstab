@@ -1,0 +1,58 @@
+#!/bin/bash
+#
+# - - -
+# authority: HHS/AC-4,2
+# authority: CIS/6.1
+# authority: CIS5/7.1
+# authority: CIS/6.2
+# authority: CIS5/7.2
+# description: Confirms the nosuid and nodev options on user-mounted removable (i.e., pamconsole) media in fstab, and confirms nodev option on other partitions
+# - - -
+
+# How to select user-mounted "removable" media in /etc/fstab?
+# CIS (RHEL 4) looks for floppy|cdrom|zip in mountpoint name;
+# LHC certification looks for none|ext3|ext4|swap anywhere.
+# Here, we look for "pamconsole", the flag that allows non-root users
+# at the console to mount the media.
+
+# CIS5 notes that this is incompatible with chroot jails, b/c devices could legitimately exist within the jail.
+
+set -e
+
+. `dirname $0`/../../lib/functions
+
+check()
+{
+    # Anything written to stdout or stderr indicates a compliance problem.
+
+    fstab_real=/etc/fstab
+    fstab_scratch=$(scratchfile $fstab_real)
+
+    # Copy fstab_real to fstab_scratch, tweaking it along the way:
+    /usr/bin/perl -ne 'if(/^\s*#/ || /^\s*$/)
+                {print;} 
+              else { 
+                (@f)=($_ =~ /(\s+|[^\s]+)/g); 
+                if ($f[6]=~/pamconsole/ && $f[6] !~ /,nosuid/) 
+                  {$f[6] .= qq(,nosuid);} 
+                if ($f[6]=~/pamconsole/ 
+                    || ($f[4] =~ /^ext\d$/ && $f[2] ne qq(/)) 
+                    && $f[6] !~ /,nodev/) 
+                  {$f[6].=qq(,nodev);} print join(qq(),@f); }' <$fstab_real >$fstab_scratch
+
+    # If we had to make changes to fstab_real, note it as noncompliance:
+    report_diff --use-diff -i $fstab_real $fstab_scratch
+
+    check_user_group_perms root root 0644 $fstab_real
+}
+
+case "$1" in 
+    check)
+        check;
+        ;;
+    *)
+        echo "Usage: $0 {check|fix}"
+        ;;
+esac
+exit 0
+

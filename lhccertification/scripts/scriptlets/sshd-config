@@ -1,0 +1,64 @@
+#!/bin/bash
+#
+# - - -
+# authority: CIS/1.2
+# authority: CIS5/2.3
+# description: Checks sshd config
+# - - -
+set -e
+
+. `dirname $0`/../../lib/functions
+
+check()
+{
+    # Anything written to stdout or stderr indicates a compliance problem.
+
+    sshd_config_real=/etc/ssh/sshd_config
+    sshd_config_scratch=$(scratchfile $sshd_config_real)
+
+    # Copy sshd_config_real to sshd_config_scratch, tweaking on the way:
+
+    # Note: Removed the following case, which is not observed at LHC:
+    #         /^[ #]*PasswordAuthentication / \
+    # 	      { print "PasswordAuthentication no"; next };
+
+    awk '/^[ #]*Port 22$/ { print; next }
+         /^[ #]*Port / { print "Port 22"; next }
+         /^[ #]*Protocol / { print "Protocol 2"; next };
+         /^[ #]*PermitRootLogin / \
+		      { print "PermitRootLogin no"; next };
+         /^# *RhostsRSAAuthentication and/ \
+		      { print ; next }; \
+         /^[ #]*RhostsRSAAuthentication / \
+		      { print "RhostsRSAAuthentication no"; next };
+         /^[ #]*HostbasedAuthentication / \
+		      { print "HostbasedAuthentication no"; next };
+         /^[ #]*IgnoreRhosts / \
+		      { print "IgnoreRhosts yes"; next };
+         /^[ #]*PermitEmptyPasswords / \
+		      { print "PermitEmptyPasswords no"; next };
+         /^[ #]*Banner / \
+                      { print "Banner /etc/issue.net"; next };
+
+	            {print}' $sshd_config_real >$sshd_config_scratch
+         # These are no longer in CIS5:
+         #	 /^#?X11Forwarding/ \
+         #		      { print "X11Forwarding yes"; next };
+         #	      /^#?RhostsAuthentication/ \
+         #		      { print " RhostsAuthentication no"; next };
+ 
+    # If we had to make changes, note it as noncompliance:
+    report_diff $sshd_config_real $sshd_config_scratch
+
+    check_user_group_perms root root 0600 $sshd_config_real
+}
+
+case "$1" in 
+    check)
+        check;
+        ;;
+    *)
+        echo "Usage: $0 {check|fix}"
+        ;;
+esac
+exit 0

@@ -1,0 +1,98 @@
+#!/bin/bash
+#
+# - - -
+# authority: HHS/AC-3,7
+# authority: CIS/7.9
+# authority: CIS5/8.6
+# authority: LHC/1.4
+# description: Prevents root from logging in from an unauthorized device
+# - - -
+set -e
+
+. `dirname $0`/../../lib/functions
+
+check()
+{
+    # Anything written to stdout or stderr indicates a compliance problem.
+
+    guess_RH_version
+
+    case "$RH" in
+        4)
+            TTY_MAX=6
+            ;;
+        5)
+            TTY_MAX=6
+            ;;
+        6)
+            TTY_MAX=11
+            ;;
+        7)
+            TTY_MAX=11
+            ;;
+        *)
+            TTY_MAX=6
+            ;;
+    esac
+
+    securetty_real=/etc/securetty
+    securetty_scratch=$(scratchfile $securetty_real)
+
+    cp /dev/null $securetty_scratch
+
+    # Compose an ideal /etc/securetty file:
+    echo console >> $securetty_scratch
+    echo >> $securetty_scratch
+    # Note: CIS5 requires limiting vc's to 1-6.
+    for i in `seq 1 $TTY_MAX` ; do
+        # Note: CIS5 excludes tty's. Dengfeng allows tty's.
+        echo tty$i >> $securetty_scratch
+        echo vc/$i >> $securetty_scratch
+        ## CIS5 says to loosen as follows if serial port must be treated as a console:
+        # echo ttyS0 >> $securetty_scratch
+        # echo ttyS1 >> $securetty_scratch
+
+    done
+
+    if [ -f ${securetty_real} ] ; then
+        # Detect if subject's securetty contains anything not in our model.
+        # Technique: Duplicate our model, concatenate the subject (uniq'd),
+        # and complain about anything in the result that is not duplicated.
+        securetty_mix=${securetty_scratch}..play
+        cat ${securetty_scratch} ${securetty_scratch} >${securetty_mix}
+        sort ${securetty_real} | uniq >> ${securetty_mix}
+        echo "))= Unexpected entries in ${securetty_real}:"
+        sort ${securetty_mix} | uniq -u || :
+        rm $securetty_mix
+
+        # Permissions:
+        check_user_group_perms root root 0400 $securetty_real
+    else
+        echo "Missing ${securetty_real}. See sample at ${securetty_scratch}."
+    fi
+
+    # gdm.conf should prevent root from logging in to Gnome:
+    gdmconf_real=/etc/X11/gdm/gdm.conf
+    if [ -f $gdmconf_real ] ; then
+        gdmconf_scratch=$(scratchfile $gdmconf_real)
+        sed -e 's/[# ]*AllowRoot=true/AllowRoot=false/' \
+            -e 's/[# ]*AllowRemoteRoot=true/AllowRemoteRoot=false/' \
+            -e 's/[# ]*Use24Clock=false/Use24Clock=true/' \
+            $gdmconf_real > $gdmconf_scratch
+
+        report_diff ${gdmconf_real} ${gdmconf_scratch} 
+
+        check_user_group_perms root root 0644 $gdmconf_real
+    fi
+}
+
+case "$1" in 
+    check)
+        check;
+        ;;
+    *)
+        echo "Usage: $0 {check|fix}"
+        ;;
+esac
+exit 0
+

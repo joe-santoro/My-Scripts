@@ -1,0 +1,80 @@
+#!/bin/bash
+#
+# - - -
+# authority: CIS/1.1
+# authority: CIS5/2.1
+# authority: HHS/SI-2,1
+# description: Runs yum checkupdate
+# - - -
+set -e 
+
+. `dirname $0`/../../lib/functions
+
+check()
+{
+    # Anything written to stdout or stderr indicates a compliance problem.
+
+    guess_RH_version
+
+    # The --security option (which requires the yum-security package)
+    # limits the results to security patches (as opposed to bug fixes).
+    Yum_Security_Option="--security"
+
+    if [ "$RH" == "4" ] ; then
+        echo "))= up2date has an interesting report:"
+        if ( up2date -l | egrep -vq 'obsoleted|Name.*Version.*Rel|--|Fetching|Version|(^ *$)' ) ; then
+            up2date -l
+        fi
+    elif [ "$RH" == "5" ] ; then
+        # Sad: yum returns success code if it fails to reach RHEL's server.
+        echo "))= yum has an interesting report:"
+        if ( yum $Yum_Security_Option check-update | egrep -vq '^Loading|^Loaded|^Skipping|100%|^Limiting package lists|^No packages needed|^$' ) ; then
+            yum $Yum_Security_Option check-update
+            echo ""
+            echo "FYI, tail of yum.log:"
+            tail /var/log/yum.log
+        fi
+    elif [ "$RH" == "6" ] || [ "$RH" == "7" ]; then
+        # Sad: yum returns success code if it fails to reach RHEL's server.
+
+        # Sad too: yum waits indefinitely if something seems to lock it out:
+        # e.g.,
+        # Existing lock /var/run/yum.pid: another copy is running as pid 2892.
+        # Another app is currently holding the yum lock; waiting for it to exit
+        #   The other application is: PackageKit
+        #     Memory :  29 M RSS ( 43 MB VSZ)
+        #     Started: Thu May 26 09:55:10 2011 - 4 day(s) 14:04:20 ago
+        #     State  : Sleeping, pid: 2892
+        # Another app is currently holding the yum lock; waiting for it to exit
+        #   The other application is: PackageKit
+        #     Memory :  29 M RSS ( 43 MB VSZ)
+        #     Started: Thu May 26 09:55:10 2011 - 4 day(s) 14:04:22 ago
+        #     State  : Sleeping, pid: 2892
+
+        if [ -x /usr/bin/pkcon ] ; then
+            echo "))= yum has an interesting report:"
+            if ( yum check-update | egrep -vq '^Loading|^Loaded|^Skipping|100%|^Limiting package lists|^No packages needed|^$' ) ; then
+                /usr/bin/pkcon -p get-updates | grep ^Security
+                echo ""
+                echo "FYI, tail of yum.log:"
+                tail /var/log/yum.log
+            fi
+        else
+            echo "))= PackageKit not installed"
+        fi
+    else
+        echo "Neither RH 4 nor RH 5 nor RH 6 nor RH 7?"
+        exit 2
+    fi
+}
+
+case "$1" in 
+    check)
+        check;
+        ;;
+    *)
+        echo "Usage: $0 {check|fix}"
+        ;;
+esac
+exit 0
+

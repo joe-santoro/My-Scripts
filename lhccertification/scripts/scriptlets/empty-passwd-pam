@@ -1,0 +1,55 @@
+#!/bin/bash
+#
+# - - -
+# authority: CIS5/SN.8
+# description: Pam should disallow empty passwords, frown on multiple failures, and not allow reusing a recent old password.
+# - - -
+set -e
+
+. `dirname $0`/../../lib/functions
+
+check()
+{
+    # Anything written to stdout or stderr indicates a compliance problem.
+
+    echo "))= PAM's nullok flag accepts empty passwords. Remove it!"
+
+    system_auth_real=/etc/pam.d/system-auth
+    system_auth_scratch=$(scratchfile $system_auth_real)
+
+    # nullok permits PAM to honor empty passwords. DISA SRR GEN000560. Zap.
+    sed -e 's/ nullok//' $system_auth_real >${system_auth_scratch}..tmp
+
+    # remember= permits PAM to enforce not reusing prior passwords. DISA SRR GEN000800. 
+    awk '( $1 == "password" && $3 == "pam_unix.so" && !/remember=/) { print $0 " remember=5"; next };
+        { print }' \
+            ${system_auth_scratch}..tmp >${system_auth_scratch}..tmp2
+
+    # deny= lets PAM lock you out after consecutive failures
+    # CIS5 hints at an off-by-one problem: "deny=3" allows 4 attempts locally but 3 by SSH.
+    awk 'BEGIN { auth_tally=0 ; account_tally=0 } \
+         ( $1 == "auth" && $2 == "required" && $3 == "pam_tally2.so" ) \
+            { auth_tally=1 }
+         ( $1 == "auth" && $2 == "required" && $3 == "pam_deny.so" && $auth_tally==0 ) \
+            { print "auth required pam_tally2.so onerr=fail no_magic_root"  }; \
+         ( $1 == "account" && $2 == "required" && $3 == "pam_tally2.so" ) \
+            { account_tally=1 }
+         ( $1 == "account" && $2 == "required" && $3 == "pam_permit.so" && $account_tally==0 ) \
+            { print "account required pam_tally2.so deny=3 no_magic_root reset" }; \
+         { print }' ${system_auth_scratch}..tmp2 >${system_auth_scratch}
+
+    report_diff $system_auth_real $system_auth_scratch
+
+    check_user_group_perms root root 0644 $system_auth_real
+}
+
+case "$1" in 
+    check)
+        check;
+        ;;
+    *)
+        echo "Usage: $0 {check|fix}"
+        ;;
+esac
+exit 0
+

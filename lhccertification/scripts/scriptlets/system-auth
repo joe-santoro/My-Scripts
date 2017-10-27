@@ -1,0 +1,87 @@
+#!/bin/bash
+#
+# - - -
+# authority: CIS5/11.4
+# description: Check the system-auth pam file.
+# - - -
+
+set -e
+
+. `dirname $0`/../../lib/functions
+
+# 2011-07-13 - Removed pam_tally2, remember=, and opasswd; SecurID server takes care of the matter of repeated failures.
+
+check()
+{
+    # Anything written to stdout or stderr indicates a compliance problem.
+
+    echo "))= PAM's system-auth should specify password-strength requirements!"
+
+    system_auth_real=/etc/pam.d/system-auth
+    system_auth_scratch=$(scratchfile $system_auth_real)
+
+perl -e '
+$remember=5;
+$saw_auth_tally=0;
+$saw_account_tally=0;
+$saw_cracklib=0;
+$carry=qq();
+$password1st=undef; # where to insert a line before 1st password entry
+@o=();
+while(<>) {
+  chomp;
+  # If line ends with backslash that is not commented, continue it:
+  if ((!m!\#!) && (m!(.*)\\$!)) {
+    $carry .= qq( $1);
+    next;
+  }
+  $_ = qq($carry$_);
+  $carry=qq();
+  # Separate pam.conf line into leading-whitespace, substance, and comment:
+  ($pre, $T, $post) = ($_ =~ /^(\s*?)(\S.*?)?(\s*(?:\#.*)?)$/);
+  if ($T ne "") {
+    if ( !defined($password1st) && ($T =~ /^(?i:password)/)) {
+      $password1st = 0+@o;
+    }
+    if ($T =~ /^(?i:password).*pam_unix\.so/) {
+      # nullok permits PAM to honor empty passwords. DISA SRR GEN000560. Zap.
+      $T =~ s/\s+nullok//g;
+    }
+    # deny= lets PAM lock you out after consecutive failures
+    # CIS5 hints at an off-by-one problem: "deny=3" allows 4 attempts locally but 3 by SSH.
+    elsif ($T =~ /^(?i:password\s+requisite)\s+pam_cracklib\.so/) {
+      %N=(lcredit=>-1,ucredit=>-1,dcredit=>-1,ocredit=>-1,minlen=>15);
+      for $C (keys(%N)) {
+        $T .= qq( $C=$N{$C}); # plant an occurrence at the end
+        $T =~ s/(\s+)$C=/\1X$C=/g; # mark all occurrences
+        $T =~ s/(\s+)X$C=(-?\d+)/\1$C=$N{$C}/; # correct 1st occurrence
+        $T =~ s/\s+X$C=-?\d+//g; # delete non-1st occurrences
+      }
+      $saw_cracklib=1;
+    }
+  }
+
+  push(@o, qq($pre$T$post\n));
+}
+if (!$saw_cracklib) {
+  if(!defined($password1st)) { $password1st = 0+@o; }
+  splice(@o, $password1st, 0, ("password requisite pam_cracklib.so try_first_pass retry=3 minlen=15 lcredit=$N{lcredit} ucredit=$N{ucredit} dcredit=$N{dcredit} ocredit=$N{ocredit}\n"));
+}
+print join(qq(), @o);
+' $system_auth_real >$system_auth_scratch
+
+    report_diff $system_auth_real $system_auth_scratch
+
+    check_user_group_perms root root 0644 $system_auth_real
+}
+
+case "$1" in 
+    check)
+        check;
+        ;;
+    *)
+        echo "Usage: $0 {check|fix}"
+        ;;
+esac
+exit 0
+

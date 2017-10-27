@@ -1,0 +1,111 @@
+## Pattern for "public servers".
+
+## The pattern consists of
+##  (2) requirements that must be satisfied, 
+##      in the form of references to authority documents;
+##  (1) exceptions, i.e., requirements that need not be satisfied.
+##    (a) requirements to waive altogether
+##    (b) scriptlets to skip
+
+## The exceptions must precede the requirements.
+
+
+
+# The lowest UID of an interactive user:
+option uid_threshold=200
+
+# The minimum password length:
+option pass_min_len=15
+
+# Do not verify PIV card reader
+waive Local/6
+
+# No need to bar USB devices b/c of physical security:
+waive CIS5/7.9
+
+# There is no wheel group:
+waive CIS5/9.11
+
+# per LHC section 2 "Exceptions to CIS Guidelines":
+# skip CIS/8.1
+waive CIS5/9.1
+
+# per Dengfeng:
+waive CIS5/SN.4
+
+# allow GUI login and X font server:
+waive CIS/3.4
+waive CIS5/4.4
+waive CIS/3.5
+waive CIS5/4.5
+waive HHS/CM-7,5
+waive HHS/CM-7,6
+waive LHC/1.25
+
+# do not prohibit ssh keys from home dirs
+waive LHC/1.28
+
+# waive prohibition of auto-mounting NFS
+waive LHC/1.20
+
+# waived because of current LHC practices.
+waive HHS/AC-3,8
+waive CIS5/3.2b
+waive CIS5/8.7
+waive CIS5/SN.3
+waive CIS5/SN.5
+waive CIS5/SN.6
+waive CIS5/SN.8
+waive CIS5/SN.9
+waive LHC/1.3
+waive LHC/1.15
+waive LHC/1.16
+waive LHC/1.18
+waive LHC/1.21b
+waive LHC/1.22b
+waive LHC/1.30
+waive LHC/1.31
+waive LHC/1.35
+waive LHC/1.36
+waive LHC/1.39
+waive LHC/1.42
+waive LHC/1.43
+waive LHC/1.44
+waive LHC/1.45
+waive LHC/1.47
+
+# Allow non securid logins:
+waive LHC/1.49
+
+# motd and motd5 are mutually exclusive.
+# Must skip one or the other.
+# motd5 implements CIS5's advice to leave motd very brief
+# and put the real warnings into issue and issue.net.
+# motd (not motd5) requires the long warning in motd.
+skip motd5
+
+# Per LHC/3.3.7, portmap is allowed on "internal machines".
+skip services-off-portmap
+skip services-off-rpcbind
+
+skip services-off-acpid
+skip services-off-anacron
+skip services-off-haldaemon
+skip services-off-network
+skip services-off-ntpd
+skip services-off-rpcgssd
+skip services-off-rpcidmapd
+skip services-off-smartd
+skip services-off-yum-updatesd
+
+# Allow DNS cache:  sustain public services across minor DNS outages.
+skip services-off-nscd
+
+# Do not flag it if netstat shows listeners on IPv6,
+# since what really matters is whether IPv6 interfaces exist.
+skip ipv6-off-netstat
+
+require HHS/*
+require CIS5/*
+require LHC/*
+require Local/*

@@ -1,0 +1,31 @@
+#!/bin/bash
+#
+# - - -
+# authority: LHC/1.33
+# description: Checks permissions of /proc/net/route
+# - - -
+set -e 
+
+. `dirname $0`/../../lib/functions
+
+check()
+{
+    # Anything written to stdout or stderr indicates a compliance problem.
+
+    check_user_group_perms root root 0444 /proc/net/route
+}
+
+while [ -n "$1" ] ; do
+    case "$1" in 
+        check)
+            check
+            break
+            ;;
+        *)
+            echo "Usage: $0 {check|fix}"
+            exit 2
+            ;;
+    esac
+done
+exit 0
+

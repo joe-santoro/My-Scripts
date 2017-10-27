@@ -1,0 +1,45 @@
+#!/bin/bash
+#
+# - - -
+# authority: CIS/1.1
+# authority: CIS5/2.1
+# authority: HHS/SI-2,1
+# authority: Local/3
+# description: Verifies BESClient is installed and enabled
+# - - -
+set -e 
+
+. `dirname $0`/../../lib/functions
+
+check()
+{
+    # Anything written to stdout or stderr indicates a compliance problem.
+		
+	guess_RH_version
+    if [ "$RH" -le 6 ] ; then
+    	if ( /sbin/chkconfig --list | grep -qi BESClient ) ; then
+        	: # good, BESClient is installed.
+        	: # now, is it set to run?
+        	echo "))= BESClient must be set to run automatically"
+        	/sbin/chkconfig --list | grep -i 'BESClient.*5:off' || :
+    	else
+        	echo "BESClient is not installed"
+    	fi
+	# Check RHEL 7 here
+	else 
+		if ! /sbin/service besclient status &> /dev/null ; then
+			echo "BESClient is not installed"
+		fi
+	fi		
+}
+
+case "$1" in 
+    check)
+        check;
+        ;;
+    *)
+        echo "Usage: $0 {check|fix}"
+        ;;
+esac
+exit 0
+

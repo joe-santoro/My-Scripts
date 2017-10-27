@@ -1,0 +1,76 @@
+#!/bin/bash
+#
+# - - -
+# authority: CIS/6.3
+# authority: CIS5/7.3
+# description: Checks that console user cannot mount media.
+# - - -
+
+set -e
+
+. `dirname $0`/../../lib/functions
+
+pk_check_mount_implicits()
+{
+    implicit_who=$1
+    pkaction --action-id org.freedesktop.udisks.filesystem-mount --verbose | grep "implicit $implicit_who" | cut -d : -f 2 | awk '{print $1}'
+}
+
+check()
+{
+    # Anything written to stdout or stderr indicates a compliance problem.
+
+    guess_RH_version
+
+    console_perms_real=/etc/security/console.perms
+    console_perms_override=/etc/security/console.perms.d/50-default.perms
+    if [ -f $console_perms_override ] ; then
+        console_perms_real=$console_perms_override
+    fi
+    console_perms_scratch=$(scratchfile $console_perms_real)
+
+    # Copy console_perms_real to console_perms_scratch, tweaking along the way:
+
+    awk '($1 == "<console>") && ($3 !~ \
+            /sound|fb|kbd|joystick|v4l|mainboard|gpm|scanner|memstick|diskonkey/) \
+            { $1 = "#<console>" }; 
+            { print }' $console_perms_real >$console_perms_scratch
+
+    # If we had to make changes, ding for noncompliance:
+    report_diff --use-sdiff -i $console_perms_real $console_perms_scratch
+
+    check_user_group_perms root root 0600 $console_perms_real
+
+    # Check also PolicyKit, for Red Hat EL 6:
+    if [ "$RH" == "6" ] ; then
+        ok=1
+        if [ "no" != "$(pk_check_mount_implicits 'any')" ] ; then
+            echo "Expected 'implicit any: no'"
+            ok=0
+        fi
+        if [ "no" != "$(pk_check_mount_implicits 'inactive')" ] ; then
+            echo "Expected 'implicit inactive: no'"
+            ok=0
+        fi
+        if [ "auth_admin" != "$(pk_check_mount_implicits 'active')" ] ; then
+            echo "Expected 'implicit active: auth_admin'"
+            ok=0
+        fi
+        if [ "$ok" == "0" ] ; then
+            echo "Corrections can be made in /usr/share/polkit-1/actions/org.freedesktop.udisks.policy."
+            echo "The worrisome pkaction readout is as follows:"
+            pkaction --action-id org.freedesktop.udisks.filesystem-mount --verbose
+        fi
+    fi
+}
+
+case "$1" in 
+    check)
+        check;
+        ;;
+    *)
+        echo "Usage: $0 {check|fix}"
+        ;;
+esac
+exit 0
+

@@ -1,0 +1,97 @@
+#!/bin/bash
+#
+# - - -
+# authority: CIS/7.3
+# authority: CIS5/8.2
+# description: Checks that system accounts are excluded from using FTP
+# option: uid_threshold Lowest UID of a normal (non-system) user
+# - - -
+set -e 
+
+. `dirname $0`/../../lib/functions
+
+# Default option values:
+if [ -z "$uid_threshold" ] ; then
+    uid_threshold=500
+fi
+
+get_vsftpd_setting()
+{
+    local setting default pe
+    setting=$1
+    shift
+    default=$1
+    pe="\$answer=qq($default); while(<>){if(/^\\s*$setting\\s*=\\s*(\\S+)/){\$answer=qq(\$1);last;}} print \$answer;" 
+    #echo "$pe" >&2
+    perl -e "$pe" $VSFTPD_CONF
+}
+
+check_ftpusers()
+{
+    # Compose an ideal ftpusers file:
+    # All service accounts should be denied access to vsftp.
+
+    ftpusers_real=$1
+    ftpusers_scratch=$(scratchfile $ftpusers_real)
+    
+    # Scratch userlist = real userlist + service accounts not in real userlist:
+    cp "$ftpusers_real" "$ftpusers_scratch"
+    service_accounts=$(mktemp -t service_accounts.XXXXXX)
+    service_accounts >$service_accounts
+    cat $ftpusers_real $ftpusers_real $service_accounts | sort | uniq -u \
+        >>"$ftpusers_scratch"
+    rm ${service_accounts}
+
+    report_diff --use-sdiff "$ftpusers_real" "$ftpusers_scratch"
+
+    # Permissions:
+    check_user_group_perms root root 0600 $ftpusers_real
+}
+
+check()
+{
+    # Gate: vsftpd is installed.
+    rpm -q vsftpd  >/dev/null  ||  return 0
+
+    # Anything written to stdout or stderr indicates a compliance problem.
+    check_ftpusers /etc/ftpusers
+
+    # Make ftp-denied list for vsftp unless its userlist_deny=NO option is set:
+
+    # Figure out where vsftpd.conf is:
+    VSFTPD_CONF=/etc/vsftpd.conf
+    test -f /etc/vsftpd/vsftpd.conf && VSFTPD_CONF=/etc/vsftpd/vsftpd.conf
+
+    if [ -e $VSFTP_CONF ] ; then
+        VSFTP_FTPUSERS=$(get_vsftpd_setting userlist_file /etc/vsftp/user_list)
+        VSFTP_USERLIST_ENABLE=$(get_vsftpd_setting userlist_enable NO)
+        VSFTP_USERLIST_DENY=$(get_vsftpd_setting userlist_deny YES)
+        
+        # In RHEL5's vsftpd.conf, 
+        #   userlist_enable=YES (overriding the default)
+        #   userlist_deny=YES (by default)
+        #   userlist_file=/etc/vsftp/user_list (by default)
+
+        if [ "$VSFTP_USERLIST_DENY" == "YES" ] ; then
+            check_ftpusers "$VSFTP_FTPUSERS"
+        fi
+    fi
+
+    return 0
+}
+
+
+while [ -n "$1" ] ; do
+    case "$1" in 
+        check)
+            check
+            break
+            ;;
+        *)
+            echo "Usage: $0 {check|fix}"
+            exit 2
+            ;;
+    esac
+done
+exit 0
+

@@ -1,0 +1,55 @@
+#!/bin/bash
+#
+# - - -
+# authority: CIS/4.1
+# authority: CIS5/5.1
+# authority: LHC/1.32
+# authority: LHC/1.34
+# description: Inspects "net" settings
+# - - -
+set -e
+
+. `dirname $0`/../../lib/functions
+
+check()
+{
+    # Anything written to stdout or stderr indicates a compliance problem.
+
+    echo "))= Deviant sysctl values:"
+    for keyEqualsExpectedValue in \
+        net.ipv4.tcp_max_syn_backlog=4096 \
+        net.ipv4.conf.all.rp_filter=1 \
+        net.ipv4.conf.all.accept_source_route=0 \
+        net.ipv4.conf.all.accept_redirects=0 \
+        net.ipv4.conf.all.secure_redirects=0 \
+        net.ipv4.conf.default.rp_filter=1 \
+        net.ipv4.conf.default.accept_source_route=0 \
+        net.ipv4.conf.default.accept_redirects=0 \
+        net.ipv4.conf.default.secure_redirects=0 \
+        net.ipv4.icmp_echo_ignore_broadcasts=1 \
+        net.ipv4.tcp_syncookies=1 \
+        ; do
+      
+      key=$(echo $keyEqualsExpectedValue | cut -d = -f 1 )
+      expected_value=$(echo $keyEqualsExpectedValue | cut -d = -f 2 )
+      actual_value=$(/sbin/sysctl -n $key)
+      if [ "$expected_value" != "$actual_value" ] ; then
+          echo "$key = $actual_value (expected: $expected_value)"
+      fi
+      
+    done
+
+    # Permissions:
+    check_user_group_perms root root 0600 /etc/sysctl.conf
+}
+
+case "$1" in 
+    check)
+        check;
+        ;;
+    *)
+        echo "Usage: $0 {check|fix}"
+        ;;
+esac
+exit 0
+

@@ -1,0 +1,63 @@
+#!/bin/bash
+#
+# - - -
+# authority: Local/6
+# description: Checks that card reader software is installed, configured, and running
+
+set -e
+
+. `dirname $0`/../../lib/functions
+
+check()
+{
+    # Anything written to stdout or stderr indicates a compliance problem.
+
+    guess_RH_version
+
+    case "$REDHAT_MAJORVERSION_ARCH" in
+        
+        5-x86_64)
+            
+            check_package openct
+            check_package opensc
+            check_package pcsc-lite
+            
+            check_service pcscd
+            check_service openct
+            
+            ;;
+
+        6-x86_64)
+            
+            check_package openct
+            check_package opensc
+            check_package pcsc-lite
+            
+            check_service pcscd
+            check_service openct
+            
+            ;;
+        
+        
+        *)
+            
+            check_package ai-activclient-scmw
+            check_package ai-activclient-apps
+            
+            check_service pcscd
+            
+            ;;
+        
+    esac
+}
+
+case "$1" in 
+    check)
+        check;
+        ;;
+    *)
+        echo "Usage: $0 {check|fix}"
+        ;;
+esac
+exit 0
+

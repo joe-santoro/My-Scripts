@@ -1,0 +1,69 @@
+#!/bin/bash
+#
+# - - -
+# authority: CIS5/11.1
+# description: Checks auditd.conf
+
+set -e
+
+. `dirname $0`/../../lib/functions
+
+check()
+{
+    # Anything written to stdout or stderr indicates a compliance problem.
+
+    # Skip the check for auditd on x86_64 architecture pending discovery of the proper auditd.rules:
+    if [ "$(uname -i)" != 'i386' ] ; then
+        exit 0
+    fi
+     
+    auditpath=
+    if [ -e /etc/audit.rules ] ; then 
+        auditpath=/etc
+    elif [ -e /etc/audit/audit.rules ] ; then
+        auditpath=/etc/audit
+    fi
+
+    if [ -n "$auditpath" ] ; then
+        auditdconf_real=$auditpath/auditd.conf
+        auditdconf_scratch=$(scratchfile $auditdconf_real)
+
+        # Observe or add "-e 1" to turn on auditing.
+        perl -e '
+%s=("num_logs"=>5,
+    "max_log_file"=>100,
+    "space_left"=>125,
+    "admin_space_left"=>75,
+    "space_left_action"=>"email");
+while(<>) {
+  if (!/^\s*#/ && /\s*(.*?)\s*=\s*(.*?)\s*$/) 
+    {  
+      ($K, $V) = ($1,$2);
+      if (exists($s{$K})) {
+        if ( $V ne $s{$K} ) {
+          $_ = "$K = $V\n";
+        }
+        delete $s{$K};
+      }
+    }
+  print;
+}
+print join("", map("$_ = $s{$_}\n", keys(%s)));
+' $auditdconf_real >$auditdconf_scratch
+
+        report_diff $auditdconf_real $auditdconf_scratch
+
+        check_user_group_perms root root 0600 $auditdconf_real
+    fi
+}
+
+case "$1" in 
+    check)
+        check;
+        ;;
+    *)
+        echo "Usage: $0 {check|fix}"
+        ;;
+esac
+exit 0
+

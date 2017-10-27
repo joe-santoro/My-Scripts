@@ -1,0 +1,27 @@
+#!/bin/bash
+#
+# - - -
+# authority: Local/7
+# description: Checks azeti nagios agent
+# - - -
+set -e 
+
+. `dirname $0`/../../lib/functions
+
+check()
+{
+    # Anything written to stdout or stderr indicates a compliance problem.
+
+    check_service azeti
+}
+
+case "$1" in 
+    check)
+        check;
+        ;;
+    *)
+        echo "Usage: $0 {check|fix}"
+        ;;
+esac
+exit 0
+

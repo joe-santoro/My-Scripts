@@ -1,0 +1,65 @@
+#!/bin/bash
+#
+# - - -
+# authority: Local/2
+# description: Checks GNOME Screensaver settings
+# - - -
+set -e
+
+. `dirname $0`/../../lib/functions
+
+check()
+{
+    # Anything written to stdout or stderr indicates a compliance problem.
+
+    local found_a_screensaver
+    found_a_screensaver=0
+
+    # Check settings of gnome-screensaver, if it is installed:
+    if  ( rpm -q gnome-screensaver >/dev/null 2>&1 )  ; then
+        found_a_screensaver=1
+
+        local k e
+
+        # Screensaver starts when terminal is idle:
+        k=/apps/gnome-screensaver/idle_activation_enabled
+        e=true
+        if [ "$e" != "`gconftool-2 --get $k`" ] ; then
+            echo "Please run gconftool-2 --set $k --type=bool $e" 
+        fi
+
+        # Screensaver locks screen:
+        k=/apps/gnome-screensaver/lock_enabled
+        e=true
+        if [ "$e" != "`gconftool-2 --get $k`" ] ; then
+            echo "Please run gconftool-2 --set $k --type=bool $e" 
+        fi
+
+        # Screensaver starts SOON enough after terminal is idle.
+        k=/apps/gnome-screensaver/idle_delay
+        e=10
+        v=$(gconftool-2 --get $k)
+        if [ -z "$v" ] ; then
+            v=0
+        fi
+        if [ $e -lt $v ] ; then
+            echo "Please run gconftool-2 --set $k --type=int $e" 
+        fi
+    fi
+
+    # Die if no screensaver was found
+    if [ "$found_a_screensaver" = "0" ] ; then
+        echo "No screensaver was found.  Checked for: gnome-screensaver"
+    fi
+}
+
+case "$1" in 
+    check)
+        check;
+        ;;
+    *)
+        echo "Usage: $0 {check|fix}"
+        ;;
+esac
+exit 0
+

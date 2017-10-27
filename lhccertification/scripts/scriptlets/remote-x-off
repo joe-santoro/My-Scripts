@@ -1,0 +1,114 @@
+#!/bin/bash
+#
+# - - -
+# authority: CIS/7.4
+# authority: CIS5/8.3
+# authority: LHC/1.26
+# description: Checks whether X servers listen to TCP/IP
+# - - -
+set -e 
+
+. `dirname $0`/../../lib/functions
+
+check()
+{
+    # Anything written to stdout or stderr indicates a compliance problem.
+
+    # Dengfeng suggests looking simply at the ps list.
+    # If Xorg is running with -nolisten, that's good enough.
+
+    #check_xservers
+    #check_xinit
+    #check_gdmconf
+    check_ps_list
+}
+
+# Red Hat 4
+check_xservers()
+{
+    if [ -e /etc/X11/xdm/Xservers ] ; then 
+        # Compose an ideal xservers file:
+        xservers_real=/etc/X11/xdm/Xservers
+        xservers_scratch=$(scratchfile $xservers_real)
+        awk '($1 !~ /^#/ && $3 == "/usr/X11R6/bin/X"  && $0 !~ /-nolisten/) \
+                  { $3 = $3 " -nolisten tcp" }; 
+                  { print }' $xservers_real > $xservers_scratch
+        
+        # Compare actual against ideal:
+        report_diff $xservers_real $xservers_scratch
+
+        check_user_group_perms root root 0444 $xservers_real
+    fi
+}
+
+# Red Hat 5
+check_xinit()
+{
+    if [ -d /etc/X11/xinit ] ; then 
+        xserverrc_real=/etc/X11/xinit/xserverrc
+        xserverrc_scratch=$(scratchfile $xserverrc_real)
+        if [ -e $xserverrc_real ] ; then
+            # Compose an ideal xserverrc file:
+            awk '/exec +X/ && !/^#/ { print "exec X :0 -nolisten tcp \$@"; next }; 
+                 { print }' $xserverrc_real > $xserverrc_scratch
+
+            # Compare actual against ideal:
+            report_diff $xserverrc_real $xserverrc_scratch
+            
+            check_user_group_perms root root 0755 $xserverrc_real
+        else
+            cat <<"EOF" >$xserverrc_scratch
+#!/bin/bash
+exec X :0 -nolisten tcp \$@
+EOF
+            echo "))= Missing ${xserverrc_real}. Recommended:"
+            cat ${xserverrc_scratch}
+            echo "))  The recommended file for your review is at ${xserverrc_scratch}."
+        fi
+    fi
+}
+
+check_ps_list()
+{
+    # Scan the process list to verify -nolisten is applied to /usr/bin/Xorg.
+    # (The tricky regex prevents the "grep" itself from matching.)
+    if  ( ps -elf | grep -q '[/]usr[/]bin[/]Xorg' )  ; then
+        # Xorg is there. Now look for -nolisten:
+        if  ( ps -elf | grep -q '[/]usr[/]bin[/]Xorg.* -nolisten' )  ; then
+            : # ok
+        else
+            # Display the offending process line:
+            ps -elf | grep '[/]usr[/]bin[/]Xorg'
+            echo "))  Xorg should have the -nolisten option."
+        fi
+    fi
+}
+
+check_gdmconf()
+{
+    if [ -e /etc/X11/gdm/gdm.conf ] ; then 
+        # Compose an ideal gdmconf file:
+        gdmconf_real=/etc/X11/gdm/gdm.conf
+        gdmconf_scratch=$(scratchfile $gdmconf_real)
+        awk -F= '($2 ~ /\/X$/) \
+                  { printf("%s -nolisten tcp\n", $0); next }; 
+                  { print }' $gdmconf_real > $gdmconf_scratch
+         
+        # Compare actual against ideal:
+        report_diff $gdmconf_real $gdmconf_scratch
+
+        check_user_group_perms root root 0644 $gdmconf_real
+    fi
+}
+
+
+case "$1" in 
+    check)
+        check;
+        ;;
+    *)
+        echo "Usage: $0 {check|fix}"
+        ;;
+esac
+exit 0
+

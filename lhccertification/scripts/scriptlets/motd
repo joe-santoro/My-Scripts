@@ -1,0 +1,66 @@
+#!/bin/bash
+#
+# - - -
+# authority: HHS/AC-8,1
+# authority: CIS/7.7
+# description: Compares /etc/motd against expected boilerplate
+# - - -
+# "The contents of /etc/motd are displayed by login(1) after a 
+# successful login but just before it executes the login shell."
+#                                             --man motd
+# "/etc/motd is generally displayed after all successful logins,
+# no matter where the user is logging in from, but is thought
+# to be less useful [than /etc/issue and such-like] because
+# it only provides notification to the user after the machine
+# has been accessed." -- CIS5, section 10.1, pg. 101
+set -e
+
+. `dirname $0`/../../lib/functions
+
+check()
+{
+    # Anything written to stdout or stderr indicates a compliance problem.
+
+    motd_real=/etc/motd
+    motd_scratch=$(scratchfile $motd_real)
+    cat >$motd_scratch <<EOF
+#####################################################################################################
+#                      ***WARNING***                                                                #
+# * This warning banner provides privacy and security notices consistent with applicable federal    #
+#   laws, directives,and other federal guidance for accessing this Government system,               #
+#   which includes                                                                                  #
+#     (1) this computer network,                                                                    #
+#     (2) all computers connected to this network, and                                              #
+#     (3) all devices and storage media attached to this network or to a computer on this network.  #
+# * This system is provided for Government-authorized use only.                                     #
+# * Unauthorized or improper use of this system is prohibited and may result in disciplinary        #
+#   action and/or civil and criminal penalties.                                                     #
+# * Personal use of social media and networking sites on this system is limited as to not           #
+#   interfere with official work duties and is subject to monitoring.                               #
+# * By using this system, you understand and consent to the following:                              #
+# * The Government may monitor, record, and audit your system usage, including usage of             #
+#   personal devices and email systems for official duties or to conduct HHS business.              #
+#   Therefore, you have no reasonable expectation of privacy regarding any communication or         #
+#   data transiting or stored on this system.                                                       #
+#   At any time, and for any lawful Government purpose, the government may monitor, intercept,      #
+#   and search and seize any communication or data transiting or stored on this system.             #
+# * Any communication or data transiting or stored on this system may be disclosed or used          #
+#   for any lawful Government purpose.                                                              #
+#####################################################################################################
+EOF
+
+    report_diff $motd_real $motd_scratch
+
+    check_user_group_perms root root 0644 $motd_real
+}
+
+case "$1" in 
+    check)
+        check;
+        ;;
+    *)
+        echo "Usage: $0 {check|fix}"
+        ;;
+esac
+exit 0
+

@@ -1,0 +1,28 @@
+#!/bin/bash
+#
+# - - -
+# authority: Local/9
+# description: Examines ifconfig for evidence of IPv6
+# - - -
+set -e 
+
+. `dirname $0`/../../lib/functions
+
+check()
+{
+    # Anything written to stdout or stderr indicates a compliance problem.
+
+    echo "))= ifconfig indicates at least one IPv6 address:"
+    /sbin/ifconfig | grep 'inet6 addr:' || :
+}
+
+case "$1" in 
+    check)
+        check;
+        ;;
+    *)
+        echo "Usage: $0 {check|fix}"
+        ;;
+esac
+exit 0
+

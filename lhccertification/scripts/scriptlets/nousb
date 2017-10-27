@@ -1,0 +1,28 @@
+#!/bin/bash
+#
+# - - -
+# authority: CIS5/7.9
+# description: Scans grub's menu for kernel commands lacking the nousb option
+# - - -
+set -e
+
+. `dirname $0`/../../lib/functions
+
+check()
+{
+    # Anything written to stdout or stderr indicates a compliance problem.
+
+    echo "))= Kernel commands in /etc/grub.conf that are missing the 'nousb' option:"
+    grep -v '^.*#' /etc/grub.conf | grep kernel | grep -v nousb
+}
+
+case "$1" in 
+    check)
+        check;
+        ;;
+    *)
+        echo "Usage: $0 {check|fix}"
+        ;;
+esac
+exit 0
+

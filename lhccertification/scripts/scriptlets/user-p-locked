@@ -1,0 +1,50 @@
+#!/bin/bash
+#
+# - - -
+# authority: CIS/3.6
+# variant: rpc
+# variant: rpcuser
+# variant: lp
+# variant: apache
+# variant: http
+# variant: httpd
+# variant: named
+# variant: dns
+# variant: mysql
+# variant: postgres 
+# variant: squid 
+# description: Checks that a daemon user's password is locked
+# - - -
+set -e
+
+. `dirname $0`/../../lib/functions
+
+check()
+{
+    # Anything written to stdout or stderr indicates a compliance problem.
+
+    # Note: The following comes from the second half of CIS/3.6.
+    # There is nothing analogous in the corresponding section of CIS5.
+
+    VARIANT=$1
+    shift
+
+    # Test passes if user does not exist:
+    id $VARIANT >/dev/null 2>&1 || exit 0
+
+    # Check for "!" in front of encrypted password
+    echo "))= Non-locked account:"
+    grep "^${VARIANT}:!" /etc/shadow >/dev/null || echo "${VARIANT}: password not locked"
+}
+
+case "$1" in 
+    check)
+        shift
+        check $*
+        ;;
+    *)
+        echo "Usage: $0 {check|fix}"
+        ;;
+esac
+exit 0
+

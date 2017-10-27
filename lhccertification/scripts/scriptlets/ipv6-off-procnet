@@ -1,0 +1,28 @@
+#!/bin/bash
+#
+# - - -
+# authority: Local/9
+# description: Examines /proc/net for evidence of IPv6
+# - - -
+set -e 
+
+. `dirname $0`/../../lib/functions
+
+check()
+{
+    # Anything written to stdout or stderr indicates a compliance problem.
+
+    echo "))= Non-empty /proc/net/if_inet6 indicates an IPv6 interface:"
+    cat /proc/net/if_inet6 2>/dev/null || :
+}
+
+case "$1" in 
+    check)
+        check;
+        ;;
+    *)
+        echo "Usage: $0 {check|fix}"
+        ;;
+esac
+exit 0
+

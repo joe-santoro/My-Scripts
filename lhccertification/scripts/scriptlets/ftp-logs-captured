@@ -1,0 +1,52 @@
+#!/bin/bash
+#
+# - - -
+# authority: CIS/5.2
+# authority: CIS5/6.2
+# description: Checks settings for wu-ftpd and vsftpd
+# - - -
+set -e
+
+. `dirname $0`/../../lib/functions
+
+check()
+{
+    # Anything written to stdout or stderr indicates a compliance problem.
+
+    # Gate: vsftpd is installed.
+    rpm -q vsftpd  >/dev/null  ||  return 0
+
+    if [ -f /etc/vsftpd.conf ] ; then 
+        vsftpdconf_real="/etc/vsftpd.conf" 
+    else 
+        vsftpdconf_real="/etc/vsftpd/vsftpd.conf" 
+    fi 
+    if [ -f $vsftpdconf_real ] ; then 
+        
+        vsftpdconf_scratch=$(scratchfile $vsftpdconf_real)
+        
+        awk '/^#?xferlog_std_format/ \
+                  { print "xferlog_std_format=NO"; next }; 
+                  /^#?log_ftp_protocol/ \
+                  { print "log_ftp_protocol=YES"; next }; 
+                  { print }' $vsftpdconf_real >$vsftpdconf_scratch
+        if [ `egrep -c log_ftp_protocol $vsftpdconf_real` == 0 ] ; then 
+            echo "log_ftp_protocol=YES" >>$vsftpdconf_scratch
+        fi 
+        
+        report_diff $vsftpdconf_real $vsftpdconf_scratch
+        
+        check_user_group_perms root root 0600 $vsftpdconf_real
+    fi 
+}
+
+case "$1" in 
+    check)
+        check;
+        ;;
+    *)
+        echo "Usage: $0 {check|fix}"
+        ;;
+esac
+exit 0
+

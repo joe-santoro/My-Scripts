@@ -1,0 +1,43 @@
+#!/bin/bash
+#
+# - - -
+# authority: CIS/4.2
+# authority: CIS5/5.2
+# description: Checks sysctl values for non-gateways
+# - - -
+set -e
+
+. `dirname $0`/../../lib/functions
+
+check()
+{
+    # Anything written to stdout or stderr indicates a compliance problem.
+
+    echo "))= Deviant sysctl values:"
+    for keyEqualsExpectedValue in \
+        net.ipv4.ip_forward=0 \
+        net.ipv4.conf.all.send_redirects=0 \
+        net.ipv4.conf.default.send_redirects=0 \
+        net.ipv4.icmp_ignore_bogus_error_responses=1 \
+        ; do
+      
+      key=$(echo $keyEqualsExpectedValue | cut -d = -f 1 )
+      expected_value=$(echo $keyEqualsExpectedValue | cut -d = -f 2 )
+      actual_value=$(/sbin/sysctl -n $key)
+      if [ "$expected_value" != "$actual_value" ] ; then
+          echo "$key = $actual_value (expected: $expected_value)"
+      fi
+      
+    done
+}
+
+case "$1" in 
+    check)
+        check;
+        ;;
+    *)
+        echo "Usage: $0 {check|fix}"
+        ;;
+esac
+exit 0
+

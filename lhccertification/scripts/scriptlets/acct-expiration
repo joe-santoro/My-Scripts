@@ -1,0 +1,101 @@
+#!/bin/bash
+#
+# - - -
+# authority: CIS/8.3
+# authority: CIS5/9.3
+# authority: HHS/AC-3,2
+# description: Checks account expiration
+# option: uid_threshold Lowest UID of a normal (non-system) user
+# option: pass_max_days PASS_MAX_DAYS value for login.defs
+# option: pass_min_days PASS_MIN_DAYS value for login.defs
+# option: pass_min_len PASS_MIN_LEN value for login.defs
+# option: pass_warn_age PASS_WARN_AGE value for login.defs
+
+# - - -
+set -e 
+
+. `dirname $0`/../../lib/functions
+
+# Default option values:
+if [ -z "$uid_threshold" ] ; then
+    uid_threshold=500
+fi
+if [ -z "$pass_max_days" ] ; then
+    pass_max_days=60
+fi
+if [ -z "$pass_min_days" ] ; then
+    pass_min_days=1
+fi
+if [ -z "$pass_min_len" ] ; then
+    pass_min_len=15
+fi
+if [ -z "$pass_warn_age" ] ; then
+    pass_warn_age=14
+fi
+
+check()
+{
+    # Anything written to stdout or stderr indicates a compliance problem.
+
+    # Note: 
+    # Similar checks also done on /etc/login.defs (by another scriptlet)
+
+    echo "))= User accounts with deviant expiration settings:"
+    for name in $(local_nonservice_accounts) ; do
+
+        # skip accounts for which there is NO PASSWORD in the shadow file.
+        hash=`grep ^${name}: /etc/shadow | cut -d : -f 2`
+        hash_size=`echo "$hash" | wc -c`
+        if [ "$hash_size" -ge 5 ] ; then
+
+            # reset the bad flag:
+            bad=
+
+            # minimum age:
+            v=`chage -l $name | grep '^Minimum.*:' | cut -d: -f 2 | cut -c 2-`
+            if [ "$v" == "-1" -o -z "$v" ] ; then
+                bad="$bad(minimum days: $v, expected $pass_min_days) "
+            elif [ "$v" \> "$pass_min_days" ]; then
+                bad="$bad(minimum days: $v, expected $pass_min_days) "
+            fi
+
+            # maximum age:
+            v=`chage -l $name | grep '^Maximum.*:' | cut -d: -f 2 | cut -c 2-`
+            if [ "$v" == "-1" -o -z "$v" ]; then
+                bad="$bad(maximum age: $v, expected $pass_max_days) "
+            elif [ "$v" \> "$pass_max_days" ]; then
+                bad="$bad(maximum age: $v, expected $pass_max_days) "
+            fi  
+
+            # warn days:
+            v=`chage -l $name | grep '^Number of days of warning.*:' | cut -d: -f 2 | cut -c 2-`
+            if [ "$v" == "-1" -o -z "$v" ]; then
+                bad="$bad(warn days: $v, expected $pass_warn_age) "
+            elif [ "$v" != "$pass_warn_age" ]; then
+                bad="$bad(warn days: $v, expected $pass_warn_age) "
+            fi  
+
+            # output
+            if [ -n "$bad" ]; then
+                echo ""
+                echo "User $name does not conform $bad"
+                chage -l $name
+            fi
+        fi
+    done
+}
+
+while [ -n "$1" ] ; do
+    case "$1" in 
+        check)
+            check
+            break
+            ;;
+        *)
+            echo "Usage: $0 {check|fix}"
+            exit 2
+            ;;
+    esac
+done
+exit 0
+

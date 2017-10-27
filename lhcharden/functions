@@ -1,0 +1,29 @@
+function service
+{
+    svc=$1
+    status=$2
+    levels=$3
+
+    if [ -z "$svc" ] || [ -z "$status" ] || [[ "$status" != "on" && "$status" != "off" ]] ; then
+        echo "usage: service service-name on|off"
+        return 1
+    fi
+
+    if [ -z "$RH" ] ; then
+        RH=$(awk '{ print $7 }' /etc/redhat-release | cut -d. -f1)
+    fi
+
+    if [ "$RH" -eq "7" ] ; then
+    # rh7 uses sytemd/systemctl
+        [ "$status" = "on" ]  && status="enable"
+        [ "$status" = "off" ] && status="disable"
+
+        /bin/systemctl $status $1.service &> /dev/null
+    else
+    # rh6 and earlier use init/chkconfig
+        if [ -z "$levels" ] ; then
+            levels=345
+        fi
+        /sbin/chkconfig --levels $levels $svc $status &> /dev/null
+    fi
+}

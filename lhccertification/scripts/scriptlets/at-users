@@ -1,0 +1,32 @@
+#!/bin/bash
+#
+# - - -
+# authority: HHS/AC-3,6
+# authority: CIS/7.5
+# authority: CIS5/8.4
+# description: Checks existence (but not contents) of at.allow and absence of at.deny
+# - - -
+set -e 
+
+. `dirname $0`/../../lib/functions
+
+check()
+{
+    # Anything written to stdout or stderr indicates a compliance problem.
+
+    echo "))= at.deny should NOT exist:"
+    ls -l /etc/at.deny 2>/dev/null || :
+
+    check_user_group_perms root root 0400 /etc/at.allow
+}
+
+case "$1" in 
+    check)
+        check;
+        ;;
+    *)
+        echo "Usage: $0 {check|fix}"
+        ;;
+esac
+exit 0
+

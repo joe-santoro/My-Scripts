@@ -1,0 +1,41 @@
+#!/bin/bash
+#
+# - - -
+# authority: HHS/CM-7,4
+# authority: CIS/3.3
+# authority: CIS5/4.3
+# description: Checks that sendmail's queue is disabled (this step for non-mail-servers only)
+# - - -
+set -e
+
+. `dirname $0`/../../lib/functions
+
+check()
+{
+    # Anything written to stdout or stderr indicates a compliance problem.
+
+    sendmail_real=/etc/sysconfig/sendmail
+    sendmail_scratch=$(scratchfile $sendmail_real)
+
+    # Prepare an ideal "sendmail" config file:
+    cat >$sendmail_scratch <<ENDSCRIPT
+DAEMON=no 
+QUEUE=1h 
+ENDSCRIPT
+
+    # Compare the original against the ideal:
+    report_diff $sendmail_real $sendmail_scratch
+
+    check_user_group_perms root root 0644 $sendmail_real
+}
+
+case "$1" in 
+    check)
+        check;
+        ;;
+    *)
+        echo "Usage: $0 {check|fix}"
+        ;;
+esac
+exit 0
+

@@ -1,0 +1,38 @@
+#!/bin/bash
+#
+# - - -
+# authority: CIS5/SN.3
+# description: Checks rc.local for a line that adjusts the cookie shield
+# - - -
+set -e
+
+. `dirname $0`/../../lib/functions
+
+check()
+{
+    # Anything written to stdout or stderr indicates a compliance problem.
+
+    rclocal_real=/etc/rc.d/rc.local
+    rclocal_scratch=$(scratchfile $rclocal_real)
+
+    awk 'BEGIN { seen=0 }
+         /echo 1 > proc.sys.net.ipv4.tcp_syncookies/ { seen=1 }
+         { print }
+         END { if (!$seen) { print "echo 1 > /proc/sys/net/ipv4/tcp_syncookies" }  } ' $rclocal_real >$rclocal_scratch
+
+    report_diff $rclocal_real $rclocal_scratch
+
+    # Permissions:
+    check_user_group_perms root root 0600 $rclocal_real
+}
+
+case "$1" in 
+    check)
+        check;
+        ;;
+    *)
+        echo "Usage: $0 {check|fix}"
+        ;;
+esac
+exit 0
+

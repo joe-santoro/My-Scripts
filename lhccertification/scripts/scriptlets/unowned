@@ -1,0 +1,32 @@
+#!/bin/bash
+#
+# - - -
+# authority: CIS5/7.8
+# description: Scans ext2, ext3, ext4 filesystems for unowned files
+# - - -
+set -e
+
+. `dirname $0`/../../lib/functions
+
+check()
+{
+    # Anything written to stdout or stderr indicates a compliance problem.
+
+    echo "))= Unowned files on ext2, ext3, ext4 file systems:"
+    for part in `grep -v '^#' /etc/fstab | awk '($3 ~ "ext[234]") \
+            { print $2 }'` 
+      do 
+      find $part -xdev -nouser -o -nogroup -exec ls -lad {} \;
+    done 
+}
+
+case "$1" in 
+    check)
+        check;
+        ;;
+    *)
+        echo "Usage: $0 {check|fix}"
+        ;;
+esac
+exit 0
+

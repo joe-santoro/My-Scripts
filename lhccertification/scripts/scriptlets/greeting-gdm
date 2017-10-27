@@ -1,0 +1,109 @@
+#!/bin/bash
+#
+# - - -
+# authority: HHS/AC-8,1
+# authority: CIS/7.7
+# authority: CIS5/10.2
+# No corresponding CIS5
+# description: Checks gdm.conf for Greeter (absent or gdmlogin)
+# - - -
+set -e
+
+. `dirname $0`/../../lib/functions
+
+check_RH4()
+{
+    # Anything written to stdout or stderr indicates a compliance problem.
+
+    gdmconf=/etc/X11/gdm/gdm.conf
+
+    # Unless Greeter=/usr/bin/gdmlogin, any specified Greeter is a problem:
+    if [ "`grep -c '^Greeter=/usr/bin/gdmlogin' $gdmconf`" = "0" ]  ; then
+        echo "))= Red flag found (Greeter, other than /usr/bin/gdmlogin, in $gdmconf):"
+        grep -H '^Greeter=' $gdmconf || :
+    fi
+
+    echo "))= Expected stuff not found:"
+    grep_positive '^Welcome=Authorized uses only!' $gdmconf
+}
+
+check_RH5()
+{
+    # Anything written to stdout or stderr indicates a compliance problem.
+
+    gdmconf_real=/etc/gdm/custom.conf
+    gdmconf_scratch=$(scratchfile $gdmconf_real)
+
+    if [ ! -f "$gdmconf_real" ] ; then
+        echo "))= GDM not installed, skipping checks"
+        return 0
+    fi
+        
+
+    # [greeter] section needs DefaultWelcome, Welcome, RemoteWelcome
+    # Replace those settings if they're present.
+    # Add the settings if they're absent.
+    perl -e '
+$WELCOME="Authorized uses only. All activity may be monitored and reported.";
+$e=+{
+  "daemon"=>+{
+     "Greeter"=>"/usr/libexec/gdmlogin"
+  },
+  "greeter"=>+{
+     "DefaultWelcome"=>"false",
+     "Welcome"=>$WELCOME,
+     "RemoteWelcome"=>$WELCOME,
+   },
+};
+sub complete_section {
+ print join("", map("$_=$$e{$section}{$_}\n", keys(%{$e{$section}})));
+ delete $e{$section};
+}
+sub complete_file {
+ for $section (keys(%{$e})) {
+  if (0 != @{$e{$section}}) {
+    print "[$section]\n";
+    complete_section();
+  }
+ }
+}
+while(<>) {
+  if (/^\[(.*?)\]/) {
+    complete_section();
+    $section=$1;
+  } 
+  elsif (/^(.*?)=(.*)/ && exists($$e{$ection}{$1})) {
+    $_="$1=$$e{$ection}{$1}\n";
+    delete $$e{$ection}{$1};
+  }
+  print;
+}
+complete_section();
+complete_file();
+' $gdmconf_real >$gdmconf_scratch
+
+    report_diff $gdmconf_real $gdmconf_scratch
+}
+
+case "$1" in 
+    check)
+        guess_RH_version
+        if [ "$RH" == "4" ] ; then
+            check_RH4
+        elif [ "$RH" == "5" ] ; then
+            check_RH5
+        elif [ "$RH" == "6" ] ; then
+            check_RH5
+        elif [ "$RH" == "7" ] ; then
+            check_RH5
+        else
+            echo "Neither RH 4 nor RH 5 nor RH 6 nor RH 7?"
+            exit 2
+        fi
+        ;;
+    *)
+        echo "Usage: $0 {check|fix}"
+        ;;
+esac
+exit 0
+

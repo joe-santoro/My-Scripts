@@ -1,0 +1,67 @@
+#!/bin/bash
+#
+# - - -
+# authority: CIS/3.14imp
+# authority: CIS5/4.14imp
+# description: Checks cupsd.conf for user and group
+# - - -
+set -e
+
+. `dirname $0`/../../lib/functions
+
+check()
+{
+    # Anything written to stdout or stderr indicates a compliance problem.
+    guess_RH_version
+
+    ## Skip the check if cupsd is disabled.
+    ## Note: The init script is "cups" while the daemon is "cupsd":
+    [ "$RH" -le 6 ] && cups_status="/sbin/chkconfig --list cups | grep -q '5:on'"
+    [ "$RH" -eq 7 ] && cups_status="/sbin/service cups status"
+
+    if $cups_status &> /dev/null ; then
+        # Compose an ideal cupsd.conf:
+        cupsd_conf_real=/etc/cups/cupsd.conf
+        cupsd_conf_scratch=$(scratchfile $cupsd_conf_real)
+    
+        sed 's/^\#User lp/User lp/' $cupsd_conf_real | \
+            sed 's/^\#Group sys/Group sys/' >${cupsd_conf_scratch}
+
+        # Compare actual against ideal:
+        report_diff $cupsd_conf_real $cupsd_conf_scratch
+
+        guess_RH_version
+        
+        case "$RH" in
+            4)
+                check_user_group_perms lp sys 0600 $cupsd_conf_real
+                ;;
+            5)
+                check_user_group_perms lp sys 0600 $cupsd_conf_real
+                ;;
+            6)
+                # RHEL6 prevents the service from writing cupsd.conf:
+                check_user_group_perms root lp 0640 $cupsd_conf_real
+                ;;
+            7)
+                # RHEL6 prevents the service from writing cupsd.conf:
+                check_user_group_perms root lp 0640 $cupsd_conf_real
+                ;;
+            *)
+                check_user_group_perms lp sys 0600 $cupsd_conf_real
+                ;;
+        esac
+        
+    fi
+}
+
+case "$1" in 
+    check)
+        check;
+        ;;
+    *)
+        echo "Usage: $0 {check|fix}"
+        ;;
+esac
+exit 0
+

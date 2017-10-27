@@ -1,0 +1,28 @@
+#!/bin/bash
+#
+# - - -
+# authority: CIS5/2.4
+# authority: HHS/AU-2,2
+# description: Checks for sysstat package
+# - - -
+set -e 
+
+. `dirname $0`/../../lib/functions
+
+check()
+{
+    # Anything written to stdout or stderr indicates a compliance problem.
+
+    check_package sysstat
+}
+
+case "$1" in 
+    check)
+        check;
+        ;;
+    *)
+        echo "Usage: $0 {check|fix}"
+        ;;
+esac
+exit 0
+

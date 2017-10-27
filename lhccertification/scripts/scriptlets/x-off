@@ -1,0 +1,48 @@
+#!/bin/bash
+#
+# - - -
+# authority: LHC/1.25
+# authority: HHS/CM-7,5
+# authority: HHS/CM-7,6
+# authority: CIS/3.4
+# authority: CIS5/4.4
+# description: Checks that X-Windows is turned off
+# - - -
+set -e 
+
+. `dirname $0`/../../lib/functions
+
+check()
+{
+    # Anything written to stdout or stderr indicates a compliance problem.
+
+    # One approach is to prevent any runlevel from starting X:
+    #echo "))= /etc/inittab indicates X11 for a runlevel:"
+    #grep -v '^#' /etc/inittab | grep 'respawn.*X11'
+
+    # CIS' approach is to simply make the default runlevel 3:
+
+    inittab_real=/etc/inittab
+    inittab_scratch=$(scratchfile $inittab_real)
+
+    sed 's/id:5:initdefault:/id:3:initdefault:/' $inittab_real > $inittab_scratch
+
+    report_diff $inittab_real $inittab_scratch
+
+    check_user_group_perms root root 0600 $inittab_real
+}
+
+while [ -n "$1" ] ; do
+    case "$1" in 
+        check)
+            check
+            break
+            ;;
+        *)
+            echo "Usage: $0 {check|fix}"
+            exit 2
+            ;;
+    esac
+done
+exit 0
+

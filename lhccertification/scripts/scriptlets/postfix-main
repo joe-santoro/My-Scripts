@@ -1,0 +1,87 @@
+#!/bin/bash
+#
+# - - -
+# authority: Local/8
+# description: Checks postfix general configuration for listening interfaces and local delivery
+
+# - - -
+set -e 
+
+. `dirname $0`/../../lib/functions
+
+check()
+{
+    # Anything written to stdout or stderr indicates a compliance problem.
+
+
+    main_cf_real=/etc/postfix/main.cf
+
+    # Commenting-out lines in main.cf is complicated because
+    # you have to comment out the continuation lines too,
+    # and they might be separated by lines that are already comments.
+    
+    # Here - Slurp main.cf into a Perl array where each element
+    # is either a comment (of however many lines) or a setting
+    # (of however many lines, some of which might already be comments).
+    # Then interpret the current settings (discarding comment lines).
+    # Then revise certain settings.
+    #  - inet_interfaces = localhost or loopback-only
+    #  - local_transport = error:local delivery is disabled
+    # Then append missing settings.
+    # Finally convert back to text.
+    # Watch out - postfix obeys the *last* setting of each variable.
+
+    if [ -f "$main_cf_real" ] ; then
+
+        echo "))= Postfix ought to listen on loopback and not deliver mail"
+
+        main_cf_scratch=$(scratchfile $main_cf_real)
+
+        # @L - logical lines (multi-line: including continuations & comments)
+        # %M - key => value (in value, newlines->space & comments removed)
+        # %N - key => revised value
+        # %S - checklist of %N
+        perl -e '
+sub flush_p { if (defined($p)) {push(@L,$p);} $p=""; } 
+sub NC { $a=shift; $a=~s/^\s*#.*$//mg; $a=~s/\s+/ /sg; $a=~s/\s*$//s; $a;} 
+while(<>) { 
+  if (/\s*#/) { $p.=$_; } 
+  elsif (/^\s/) {$p .= $_;} 
+  else { flush_p(); $p=$_; } 
+} 
+flush_p();
+for $L (@L) { if($L =~ /^([^\s#].*?)\s*=\s*(.*)/s) {$M{$1}=NC($2);} } 
+%N=%M; 
+if ($N{$k="inet_interfaces"} ne "localhost") {$N{$k}="loopback-only"}; 
+$N{"local_transport"} = "error:local delivery is disabled"; 
+%S=%N; 
+map(do{if(/^([^\s#].*?)\s*=/){$k=$1; 
+                              if($M{$k} ne $N{$k}){ 
+                                s/^/#/sg; 
+                                $_ = "$k=$N{$k}\n$_";
+                              } 
+                              $foo=delete($S{$k});
+                             }
+      }, @L); 
+for $N (keys(%S)) { push(@L,"$N=$N{$N}\n");} 
+print join("",@L);' \
+<"$main_cf_real" >"$main_cf_scratch"
+        
+        report_diff $main_cf_real $main_cf_scratch
+    fi
+}
+
+while [ -n "$1" ] ; do
+    case "$1" in 
+        check)
+            check
+            break
+            ;;
+        *)
+            echo "Usage: $0 {check|fix}"
+            exit 2
+            ;;
+    esac
+done
+exit 0
+

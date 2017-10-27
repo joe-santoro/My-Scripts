@@ -1,0 +1,29 @@
+#!/bin/bash
+#
+# - - -
+# authority: Local/7
+# description: Checks Symantec services
+# - - -
+set -e 
+
+. `dirname $0`/../../lib/functions
+
+check()
+{
+    # Anything written to stdout or stderr indicates a compliance problem.
+
+    check_service smcd
+    check_service rtvscand
+    check_service symcfgd
+}
+
+case "$1" in 
+    check)
+        check;
+        ;;
+    *)
+        echo "Usage: $0 {check|fix}"
+        ;;
+esac
+exit 0
+

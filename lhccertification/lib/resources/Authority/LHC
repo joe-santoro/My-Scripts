@@ -1,0 +1,65 @@
+title=LHC Unix System Hardening Guidelines
+by-hand!1.1 Disable all services that are not absolutely necessary.
+by-hand!1.2 Create non-root users to perform non-root tasks.
+by-hand!1.3 Create separate user accounts for each person required to access the machine.
+1.4 Do not allow "root" to login remotely.
+1.5 Do not allow service accounts to log in.
+1.6 Use a non-existent directory where possible.
+1.7 Service Account users should not have a valid login shell in /etc/passwd.
+1.8 Set the sticky bit on a directory.
+1.9 Carefully examine the need for suid and sgid bit.
+by-hand!1.10 Scan (using chron) for changes to suid and sgid.
+by-hand!1.11 Separate the roles of public and back-end servers.
+by-hand!1.12 Remote log to a tightly controlled box.
+by-hand!1.13 Consider using the chattr command.
+by-hand!1.14 Maintain and store off machine checksums for directories.
+by-hand!1.15 Run Tripwire or AIDE.
+by-hand!1.16 Run tripwire or an MD5 hash scan to look for unauthorized changes.
+1.17 Remove version banners from sendmail, apache, etc.
+by-hand!1.18 Check for RPC services using Nmap.
+1.19 Do not use NFS on production systems.
+1.20 If NFS must be used, it must not be auto-mounted.
+by-hand!1.21 Use read only when using NFS.
+by-hand!1.21b Restrict NFS to specific addresses with ipchains or similar.
+1.22a Wrap ... RPC.
+by-hand!1.22b ...Firewall RPC.
+by-hand!1.23 Don't allow hosts to mount NFS volumes as "root" and do not allow "suid".
+by-hand!1.24 Examine /etc/exports.
+1.25 XDM:  Remove X windows services on production systems.
+1.26 Do not allow XDM to accept remote requests.
+1.27 Disable ssh-agent forwarding.
+1.28 Do not allow SSH auth keys in /home directories.
+1.29 Turn off all "r" commands, such as rlogin.
+by-hand!1.30 Do not use multiple-use passwords on any production systems.
+by-hand!1.31 Move DNS to its own host, keep services separated.
+1.32 Turn off source routing in the Linux kernel.
+1.33 Prevent new route additions.
+1.34 Deny ICMP redirects, change the /proc entry.
+by-hand!1.35 Use on-board SSL certificates to validate communication is only occurring from trusted hosts.
+by-hand!1.36 Disallow anonymous LDAP access on production servers.
+1.37 Make sure history files are readable only by the owner.
+1.38 Do not store authentication information in .netrc for FTP.
+by-hand!1.39 Enforce separation of services.
+1.40 Eliminate the use of "." in paths.
+by-hand!1.41 Mount /home (and possibly /tmp /var/tmp) with the noexec, nosuid flag wherever possible.
+by-hand!1.42 Create separate partitions for each of the following directories.
+by-hand!1.43 Validate, security test applications prior to going live.
+by-hand!1.44 Remove anything in cgi-bin or bin that shouldn't absolutely be there.
+by-hand!1.45 Turn off PHP register-globals in httpd.conf wherever possible.
+1.46a Implement host access controls using inetd...
+1.46b Implement host access controls using ... TCP Wrappers.
+by-hand!1.47 Chroot applications into a jail, application by application.
+1.48 No compilers are allowed on production servers.
+1.49 RSA SecureID has been activated for remote logins.
+#2.1 Skip 8.1 \u2013 Block System Accounts
+#2.2 Skip 2.8 \u2013 Only enable CDE-related daemons if absolutely necessary.
+#2.3 Skip 3.17 - Only enable GUI login if absolutely necessary.
+#2.4 Edit /etc/init.d/syslog
+#2.5 Skip 7.13  Set EEPROM security-mode and log failed access
+#3.3.1 Skip  3.4 Disable GUI login
+#3.3.2 Skip  3.5 Disable X font server
+#3.3.3 Run 3.7 enable SMB (Windows filesharing) processes
+#3.3.4 Run  3.8 enable NFS server processes
+#3.3.5 Run  3.9 enable NFS client processes
+#3.3.6 Run  3.11 enable NIS client processes
+#3.3.7 Run  3.12 enable RPC portmap process.

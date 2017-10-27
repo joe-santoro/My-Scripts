@@ -1,0 +1,48 @@
+#!/bin/bash
+#
+# - - -
+# authority: Local/4
+# description: Checks that syslog will run automatically
+
+set -e
+
+. `dirname $0`/../../lib/functions
+
+check()
+{
+    # Anything written to stdout or stderr indicates a compliance problem.
+
+    guess_RH_version
+
+    case "$RH" in
+        4)
+            SYSLOG=syslog
+            ;;
+        5)
+            SYSLOG=syslog
+            ;;
+        6)
+            SYSLOG=rsyslog
+            ;;
+        7)
+            SYSLOG=rsyslog
+            ;;
+        *)
+            SYSLOG=syslog
+            ;;
+    esac
+
+    echo "))= $SYSLOG service is not set to run automatically:"
+    check_service $SYSLOG
+}
+
+case "$1" in 
+    check)
+        check;
+        ;;
+    *)
+        echo "Usage: $0 {check|fix}"
+        ;;
+esac
+exit 0
+

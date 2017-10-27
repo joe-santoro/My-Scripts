@@ -1,0 +1,74 @@
+#!/bin/bash
+#
+# - - -
+# authority: CIS/5.1
+# authority: CIS5/6.1
+# authority: CIS5/6.4
+# authority: LHC/1.12
+# description: Checks for "lhcsyslog.nlm.nih.gov" in syslog.conf, and existence and mode of /var/log/secure
+# - - -
+set -e 
+
+. `dirname $0`/../../lib/functions
+
+check()
+{
+    # Anything written to stdout or stderr indicates a compliance problem.
+
+    guess_RH_version
+
+    case "$RH" in
+        4)
+            SYSLOG=syslog
+            ;;
+        5)
+            SYSLOG=syslog
+            ;;
+        6)
+            SYSLOG=rsyslog
+            ;;
+        7)
+            SYSLOG=rsyslog
+            ;;
+        *)
+            SYSLOG=syslog
+            ;;
+    esac
+            
+    syslogconf_real="/etc/${SYSLOG}.conf"
+    syslogconf_scratch=$(scratchfile $syslogconf_real)
+    
+    # At end of file, append '*.* @lhcsyslog.nlm.nih.gov' if absent
+    # (but allow "*.debug @lhcsyslog.nlm.nih.gov" as an alternative).
+
+    if [ "$SYSLOG" == "syslog" ] ; then
+        awk 'BEGIN { lhc=0 }
+         /^ *#/ { print; next }
+         /^ *\*\.(debug|\*)[[:space:]]+@@?lhcsyslog.nlm.nih.gov/ { lhc=1 }
+         { print }
+         END { if (lhc==0) { print "\n*.*\t@lhcsyslog.nlm.nih.gov\n" }  }
+         ' $syslogconf_real > $syslogconf_scratch
+    else
+        awk 'BEGIN { lhc=0 }
+         /^ *#/ { print; next }
+         /^ *\*\.(debug|\*)[[:space:]]+@@?lhcsyslog.nlm.nih.gov/ { lhc=1 }
+         { print }
+         END { if (lhc==0) { print "\n*.*\t@lhcsyslog.nlm.nih.gov\n" }  }
+         ' $syslogconf_real > $syslogconf_scratch
+    fi        
+
+    report_diff $syslogconf_real $syslogconf_scratch
+
+    check_user_group_perms root root 0600 /var/log/secure
+}
+
+case "$1" in 
+    check)
+        check;
+        ;;
+    *)
+        echo "Usage: $0 {check|fix}"
+        ;;
+esac
+exit 0
+

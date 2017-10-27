@@ -1,0 +1,61 @@
+#!/bin/bash
+#
+# - - -
+# authority: LHC/1.17
+# description: Checks httpd.conf for excessive freedom of information
+# - - -
+set -e
+
+. `dirname $0`/../../lib/functions
+
+check()
+{
+    # Anything written to stdout or stderr indicates a compliance problem.
+
+    # Gate: httpd is installed.
+    rpm -q httpd  >/dev/null  ||  return 0
+
+    httpdconf_real=/etc/httpd/conf/httpd.conf
+        
+    if [ -f $httpdconf_real ] ; then 
+        
+        httpdconf_scratch=$(scratchfile $httpdconf_real)
+        
+        awk 'BEGIN { IGNORECASE=1 }
+             /^[# ]*ServerTokens/ { print "ServerTokens ProductOnly"; next }
+             /^[ ]*ServerSignature *[Oo]ff/ { print; next }
+             /^[# ]*ServerSignature/ { print "ServerSignature off"; next }
+             { print }' \
+                 $httpdconf_real > $httpdconf_scratch
+        
+        # If no ServerTokens, die.
+        if  grep -qi '^ServerTokens ProductOnly' $httpdconf_scratch >/dev/null ; then
+            :
+        else
+            echo "httpd.conf must specify 'ServerTokens ProductOnly'"
+            exit 2
+        fi
+        
+        # If no ServerSignature, die.
+        if  grep -qi '^ServerSignature off' $httpdconf_scratch >/dev/null ; then
+            :
+        else
+            echo "httpd.conf must specify 'ServerSignature off'"
+            exit 2
+        fi
+        
+        report_diff $httpdconf_real $httpdconf_scratch
+        check_user_group_perms root root 0644 $httpdconf_real
+    fi
+}
+
+case "$1" in 
+    check)
+        check;
+        ;;
+    *)
+        echo "Usage: $0 {check|fix}"
+        ;;
+esac
+exit 0
+

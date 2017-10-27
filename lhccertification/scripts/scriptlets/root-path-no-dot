@@ -1,0 +1,35 @@
+#!/bin/bash
+#
+# - - -
+# authority: HHS/AC-2,1a
+# authority: CIS/8.6
+# authority: CIS5/9.5
+# authority: LHC/1.40
+# description: Spots "." in the path.
+# - - -
+set -e
+
+. `dirname $0`/../../lib/functions
+
+check()
+{
+    # Anything written to stdout or stderr indicates a compliance problem.
+
+    for x in ${PATH//:/ }
+    do
+      if [ "$x" = "." ] ; then
+          echo "Dot (the current directory) is on the path:  $PATH"
+      fi
+    done
+}
+
+case "$1" in 
+    check)
+        check;
+        ;;
+    *)
+        echo "Usage: $0 {check|fix}"
+        ;;
+esac
+exit 0
+

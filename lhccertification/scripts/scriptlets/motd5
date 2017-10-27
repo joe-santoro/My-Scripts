@@ -1,0 +1,50 @@
+#!/bin/bash
+#
+# - - -
+# authority: HHS/AC-8,1
+# authority: CIS5/10.1
+# description: Compares /etc/motd against expected boilerplate
+# - - -
+# "The contents of /etc/motd are displayed by login(1) after a 
+# successful login but just before it executes the login shell."
+#                                             --man motd
+# "/etc/motd is generally displayed after all successful logins,
+# no matter where the user is logging in from, but is thought
+# to be less useful [than /etc/issue and such-like] because
+# it only provides notification to the user after the machine
+# has been accessed." -- CIS5, section 10.1, pg. 101
+set -e
+
+. `dirname $0`/../../lib/functions
+
+check()
+{
+    # Anything written to stdout or stderr indicates a compliance problem.
+
+    # Per CIS5, banners should not indicate the Operating System:
+    echo "))= Banners should not indicate the operating system:"
+    required='Authorized uses only. All activity may be monitored and reported.'
+    motd_real=/etc/motd
+    motd_scratch=$(scratchfile $motd_real)
+    awk "BEGIN { warned=0 }
+         /red ?hat|kernel|enterprise|rhel|fedora/ { next }
+         /Authorized uses only.*monitored and reported/ { warned=1 }
+         { print }
+         END { if (warned==0) { print \"Authorized uses only. All activity may be monitored and reported.\" } } " \
+             $motd_real > $motd_scratch
+
+    report_diff $motd_real $motd_scratch
+
+    check_user_group_perms root root 0644 $motd_real
+}
+
+case "$1" in 
+    check)
+        check;
+        ;;
+    *)
+        echo "Usage: $0 {check|fix}"
+        ;;
+esac
+exit 0
+

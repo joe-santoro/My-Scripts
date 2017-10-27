@@ -1,0 +1,32 @@
+#!/bin/bash
+#
+# - - -
+# authority: HHS/AC-2,4
+# description: Scans config files for "mesg n"
+# - - -
+set -e
+
+. `dirname $0`/../../lib/functions
+
+check()
+{
+    # Anything written to stdout or stderr indicates a compliance problem.
+
+    # bash shell reads /etc/profile
+    # tcsh shell reads /etc/csh.login
+    echo "))= 'mesg n' not found (Note: guard it with 'if [ -n \"\$PS1\" ]', etc.:"
+    for x in /etc/profile /etc/csh.login ; do
+      grep_positive 'mesg n' $x
+    done        
+}
+
+case "$1" in 
+    check)
+        check;
+        ;;
+    *)
+        echo "Usage: $0 {check|fix}"
+        ;;
+esac
+exit 0
+

@@ -1,0 +1,38 @@
+#!/bin/bash
+#
+# - - -
+# authority: CIS5/SN.2
+# authority: LHC/1.17
+# description: Checks sendmail greeting
+# - - -
+set -e
+
+. `dirname $0`/../../lib/functions
+
+check()
+{
+    # Anything written to stdout or stderr indicates a compliance problem.
+
+    # Gate: sendmail is installed.
+    rpm -q sendmail  >/dev/null  ||  return 0
+
+    sendmailcf_real=/etc/mail/sendmail.cf
+    sendmailcf_scratch=$(scratchfile $sendmailcf_real)
+    awk '/O SmtpGreetingMessage=/ { print "O SmtpGreetingMessage=Mail Server Ready; $b"; next}
+{print}' $sendmailcf_real | sed 's/^O HelpFile=/#O HelpFile=/' >$sendmailcf_scratch
+    
+    report_diff $sendmailcf_real $sendmailcf_scratch
+    
+    check_user_group_perms root bin 0444 $sendmailcf_real
+}
+
+case "$1" in 
+    check)
+        check;
+        ;;
+    *)
+        echo "Usage: $0 {check|fix}"
+        ;;
+esac
+exit 0
+

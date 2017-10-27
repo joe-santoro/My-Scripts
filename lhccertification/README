@@ -1,0 +1,32 @@
+--- Notes for the Ceritifier ---
+
+Usage:
+
+   scripts/check PublicServer
+   scripts/check InternalWorkstation
+   scripts/check CTInternalWorkstation
+
+Reports:
+
+   less /Certification/lhccert_summary
+   less /Certification/lhccert_report
+
+Full before-and-after versions of files referred to in the reports:
+
+   /Certification/trail_YYYY_MM_DD_HH_MM/bak/...
+   /Certification/trail_YYYY_MM_DD_HH_MM/new/...
+
+
+--- Notes for Adapting the Tool to 
+    New Sets of Recommendations
+    Or New Circumstances ---
+
+Verbatim lists of authorities' recommendations:
+
+   lib/resources/Authority/* (e.g., CIS5)
+
+Subsets of recommendations actually to apply:
+
+   lib/resources/Pattern/*   (e.g., PublicServer)
+
+

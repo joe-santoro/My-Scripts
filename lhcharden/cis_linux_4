@@ -1,0 +1,121 @@
+#!/bin/sh
+PATH=$PATH:/bin:/usr/bin:/sbin:/usr/sbin
+automatic=$1
+options=$2
+
+menu1=0; menu2=0; menu3=0; menu4=0; menu5=0; menu6=0; menu7=0
+flag1=0; flag2=0; flag3=0; flag4=0; flag5=0; flag6=0; flag7=0
+if test "$automatic" = "1"
+then
+    if test "$options" = "1"
+    then
+        menu1=1; menu2=1; menu3=0; menu4=0; menu5=0; menu6=0; menu7=0
+    elif test "$options" = "2"
+    then
+        menu1=1; menu2=1; menu3=0; menu4=0; menu5=0; menu6=0; menu7=0
+    else
+    echo "exited in parsing options in section 4 menus"
+        exit
+    fi
+fi
+
+
+until test "$console_in" = "0"
+do
+   #clear
+    echo "        CIS LINUX Benchmark v2.0"
+    echo "             Section 4  Menu"
+    echo 
+    if test "$menu1" = 1 
+    then
+        echo "_X_ (1) 4.1 Network Parameter Modifications"
+        else
+    echo "___ (1) 4.1 Network Parameter Modifications"
+    fi
+    if test "$menu2" = 1 
+    then
+        echo "_X_ (2) 4.2 Additional network parameter modifications"
+    else
+        echo "___ (2) 4.2 Additional network parameter modifications"
+    fi
+        echo "    (0)  Back to Main Menu"
+        echo " Selection => "
+    if test "$automatic" = "1"
+    then
+        echo "automatic opted"
+    else
+        read console_in
+    fi   
+   
+    if ((test "$console_in" = "1" || test "$menu1" = "1" ) && ( test "$flag1" != "1") )
+    then
+        
+#      cat <<END_SCRIPT >> /etc/sysctl.conf
+#net.ipv4.tcp_max_syn_backlog=4096
+#net.ipv4.conf.all.rp_filter=1
+#net.ipv4.conf.all.accept_source_route=0
+#net.ipv4.conf.all.accept_redirects=0
+#net.ipv4.conf.all.secure_redirects=0
+#net.ipv4.conf.default.rp_filter=1
+#net.ipv4.conf.default.accept_source_route=0
+#net.ipv4.conf.default.accept_redirects=0
+#net.ipv4.conf.default.secure_redirects=0
+#net.ipv4.icmp_echo_ignore_broadcasts=1
+#net.ipv4.tcp_syncookies=1
+#net.ipv4.conf.all.send_redirects=0
+#net.ipv4.conf.default.send_redirects=0
+#net.ipv6.conf.all.disable_ipv6 = 0
+#net.ipv6.conf.default.disable_ipv6 = 0
+#net.ipv6.conf.lo.disable_ipv6 = 1
+#END_SCRIPT
+                
+        /bin/sed -i '/^net.ipv4.tcp_max_syn_backlog/d' /etc/sysctl.conf && echo "net.ipv4.tcp_max_syn_backlog=4096">>/etc/sysctl.conf
+        /bin/sed -i '/^net.ipv4.conf.all.rp_filter/d' /etc/sysctl.conf && echo "net.ipv4.conf.all.rp_filter=1">>/etc/sysctl.conf
+        /bin/sed -i '/^net.ipv4.conf.all.accept_source_route/d' /etc/sysctl.conf && echo "net.ipv4.conf.all.accept_source_route=0">>/etc/sysctl.conf
+        /bin/sed -i '/^net.ipv4.conf.all.accept_redirects/d' /etc/sysctl.conf && echo "net.ipv4.conf.all.accept_redirects=0">>/etc/sysctl.conf
+        /bin/sed -i '/^net.ipv4.conf.all.secure_redirects/d' /etc/sysctl.conf && echo "net.ipv4.conf.all.secure_redirects=0">>/etc/sysctl.conf
+        /bin/sed -i '/^net.ipv4.conf.default.rp_filter/d' /etc/sysctl.conf && echo "net.ipv4.conf.default.rp_filter=1">>/etc/sysctl.conf
+        /bin/sed -i '/^net.ipv4.conf.default.accept_source_route/d' /etc/sysctl.conf && echo "net.ipv4.conf.default.accept_source_route=0">>/etc/sysctl.conf
+        /bin/sed -i '/^net.ipv4.conf.default.accept_redirects/d' /etc/sysctl.conf && echo "net.ipv4.conf.default.accept_redirects=0">>/etc/sysctl.conf
+        /bin/sed -i '/^net.ipv4.conf.default.secure_redirects/d' /etc/sysctl.conf && echo "net.ipv4.conf.default.secure_redirects=0">>/etc/sysctl.conf
+        /bin/sed -i '/^net.ipv4.icmp_echo_ignore_broadcasts/d' /etc/sysctl.conf && echo "net.ipv4.icmp_echo_ignore_broadcasts=1">>/etc/sysctl.conf
+        /bin/sed -i '/^net.ipv4.tcp_syncookies/d' /etc/sysctl.conf && echo "net.ipv4.tcp_syncookies=1">>/etc/sysctl.conf
+        /bin/sed -i '/^net.ipv4.conf.all.send_redirects/d' /etc/sysctl.conf && echo "net.ipv4.conf.all.send_redirects=0">>/etc/sysctl.conf
+        /bin/sed -i '/^net.ipv4.conf.default.send_redirects/d' /etc/sysctl.conf && echo "net.ipv4.conf.default.send_redirects=0">>/etc/sysctl.conf
+        /bin/sed -i '/^net.ipv6.conf.all.disable_ipv6/d' /etc/sysctl.conf && echo "net.ipv6.conf.all.disable_ipv6=0">>/etc/sysctl.conf
+        /bin/sed -i '/^net.ipv6.conf.default.disable_ipv6/d' /etc/sysctl.conf && echo "net.ipv6.conf.default.disable_ipv6=0">>/etc/sysctl.conf
+        /bin/sed -i '/^net.ipv6.conf.lo.disable_ipv6/d' /etc/sysctl.conf && echo "net.ipv6.conf.lo.disable_ipv6=1">>/etc/sysctl.conf
+
+
+        /bin/chown root:root /etc/sysctl.conf 
+        /bin/chmod 0600 /etc/sysctl.conf 
+        echo "Section 4.1 completed."
+        menu1=1
+        flag1=1
+    fi
+
+    if ((test "$console_in" = "2" || test "$menu2" = "1" ) && ( test "$flag2" != "1") )
+    then
+
+#      cat <<END_SCRIPT >> /etc/sysctl.conf 
+#net.ipv4.ip_forward=0
+#net.ipv4.conf.all.send_redirects=0
+#net.ipv4.conf.default.send_redirects=0
+#END_SCRIPT
+        
+        /bin/sed -i '/^net.ipv4.ip_forward/d' /etc/sysctl.conf && echo "net.ipv4.ip_forward=0">>/etc/sysctl.conf
+        /bin/sed -i '/^net.ipv4.conf.all.send_redirects/d' /etc/sysctl.conf && echo "net.ipv4.conf.all.send_redirects=0">>/etc/sysctl.conf
+        /bin/sed -i '/^net.ipv4.conf.default.send_redirects/d' /etc/sysctl.conf && echo "net.ipv4.conf.default.send_redirects=0">>/etc/sysctl.conf
+
+        /bin/chown root:root /etc/sysctl.conf 
+        /bin/chmod 0600 /etc/sysctl.conf 
+        echo "Section 4.2 completed."
+        menu2=1
+        flag2=1
+    fi
+    if test "$automatic" = "1"
+    then
+        console_in=0
+    fi
+
+done

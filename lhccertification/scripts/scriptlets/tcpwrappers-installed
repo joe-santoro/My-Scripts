@@ -1,0 +1,28 @@
+#!/bin/bash
+#
+# - - -
+# authority: HHS/AC-2,2
+# description: Detects tcp_wrappers RPM
+# - - -
+set -e
+
+. `dirname $0`/../../lib/functions
+
+check()
+{
+    # Anything written to stdout or stderr indicates a compliance problem.
+
+    rpm_module=tcp_wrappers
+    rpm -q $rpm_module >/dev/null || rpm -q $rpm_module
+}
+
+case "$1" in 
+    check)
+        check;
+        ;;
+    *)
+        echo "Usage: $0 {check|fix}"
+        ;;
+esac
+exit 0
+

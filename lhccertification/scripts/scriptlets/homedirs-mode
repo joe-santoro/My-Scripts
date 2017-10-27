@@ -1,0 +1,56 @@
+#!/bin/bash
+#
+# - - -
+# authority: HHS/AC-3,1
+# authority: CIS/8.7
+# authority: CIS5/9.6
+# description: Spots exposed home directories
+# option: user_home_perm_prohibit mode bits not expected of user home dirs
+# option: uid_threshold Lowest UID of a normal (non-system) user
+# - - -
+# (Note: CIS/8.7 specifies mode 750; HHS says as restrictive as possible)
+set -e
+
+. `dirname $0`/../../lib/functions
+
+# Default option values:
+if [ -z "$uid_threshold" ] ; then
+    uid_threshold=500
+fi
+if [ -z "$user_home_perm_prohibit" ] ; then
+    user_home_perm_prohibit="027"
+fi
+
+check()
+{
+    # Anything written to stdout or stderr indicates a compliance problem.
+
+    echo "))= Deviant permissions: No permission bit in $user_home_perm_prohibit is expected:"
+    roothome=$(grep '^root' /etc/passwd | cut -d : -f 6)
+    for dir in `awk -F: '($3 >= $uid_threshold) { print $6 }' /etc/passwd` 
+      do 
+      # Exclude root. It is subject to a separate, more stringent, check.
+      if [ "$dir" == "$roothome" ] ; then
+          :
+      else
+          find $dir -maxdepth 0 \
+              -perm /$user_home_perm_prohibit \
+              -ls
+      fi
+    done
+}
+
+while [ -n "$1" ] ; do
+    case "$1" in 
+        check)
+            check
+            break
+            ;;
+        *)
+            echo "Usage: $0 {check|fix}"
+            exit 2
+            ;;
+    esac
+done
+exit 0
+

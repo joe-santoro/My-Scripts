@@ -1,0 +1,43 @@
+#!/bin/bash
+#
+# - - -
+# authority: Local/5
+# description: Checks ntp.conf against the setup instructions
+# - - -
+set -e
+
+. `dirname $0`/../../lib/functions
+
+check()
+{
+    # Anything written to stdout or stderr indicates a compliance problem.
+
+    ntp_conf_real=/etc/ntp.conf
+    ntp_conf_scratch=`scratchfile $ntp_conf_real`
+
+    cat >$ntp_conf_scratch <<EOF
+server lhcntp.nlm.nih.gov
+driftfile /var/lib/ntp/drift
+keys /etc/ntp/keys
+trustedkey 15715 65533 65534
+disable monitor
+restrict default kod nomodify notrap nopeer noquery
+restrict -6 default kod nomodify notrap nopeer noquery
+EOF
+
+    # If we had to make changes, note it as noncompliance:
+    report_diff $ntp_conf_real $ntp_conf_scratch
+ 
+    check_user_group_perms root root 0644 $ntp_conf_real
+}
+
+case "$1" in 
+    check)
+        check;
+        ;;
+    *)
+        echo "Usage: $0 {check|fix}"
+        ;;
+esac
+exit 0
+

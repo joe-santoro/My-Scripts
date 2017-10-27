@@ -1,0 +1,28 @@
+#!/bin/bash
+#
+# - - -
+# authority: Local/9
+# description: Examines netstat for evidence of IPv6
+# - - -
+set -e 
+
+. `dirname $0`/../../lib/functions
+
+check()
+{
+    # Anything written to stdout or stderr indicates a compliance problem.
+
+    echo "))= netstat indicates at least one process listening on an IPv6 port:"
+    /bin/netstat -tlpn | grep '::' || :
+}
+
+case "$1" in 
+    check)
+        check;
+        ;;
+    *)
+        echo "Usage: $0 {check|fix}"
+        ;;
+esac
+exit 0
+
