@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<BES xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="BES.xsd">
+	<Fixlet>
+		<Title>CEB ISG Add GPU Cluster Users</Title>
+		<Description><![CDATA[<P>Author Joseph Santoroski</P>
+<P>Big Fix task to add users to the GPU cluster.&nbsp; Scripts expects 2 parameters which is will prompt you for: Username and UID.</P>
+<P>&nbsp;</P>]]></Description>
+		<GroupRelevance JoinByIntersection="true">
+			<SearchComponentPropertyReference PropertyName="OS" Comparison="Contains">
+				<SearchText>Ubuntu</SearchText>
+				<Relevance>exists (operating system) whose (it as string as lowercase contains "Ubuntu" as lowercase)</Relevance>
+			</SearchComponentPropertyReference>
+			<SearchComponentPropertyReference PropertyName="Computer Name" Comparison="Contains">
+				<SearchText>ceb</SearchText>
+				<Relevance>exists (computer name) whose (it as string as lowercase contains "ceb" as lowercase)</Relevance>
+			</SearchComponentPropertyReference>
+		</GroupRelevance>
+		<Category></Category>
+		<Source>Internal</Source>
+		<SourceID></SourceID>
+		<SourceReleaseDate>2018-06-05</SourceReleaseDate>
+		<SourceSeverity></SourceSeverity>
+		<CVENames></CVENames>
+		<SANSID></SANSID>
+		<MIMEField>
+			<Name>x-fixlet-modification-time</Name>
+			<Value>Wed, 06 Jun 2018 15:31:31 +0000</Value>
+		</MIMEField>
+		<Domain>BESC</Domain>
+		<DefaultAction ID="Action1">
+			<Description>
+				<PreLink>Click </PreLink>
+				<Link>here</Link>
+				<PostLink> to deploy this action.</PostLink>
+			</Description>
+			<ActionScript MIMEType="application/x-Fixlet-Windows-Shell"><![CDATA[// Enter your action script here
+action parameter query "USERNAME" with description "Please enter USERNAME"
+action parameter query "UID" with description "Please enter User ID (UID)"
+
+delete __createfile
+createfile until _EOF
+#!/bin/bash
+#set -x
+
+#################
+# Script to add users to the CEB GPU cluser
+# Parameters: Username, User ID
+# This script is intended to be run from BigFix
+#
+# Author: Joseph Santoroski
+# Created: June 1, 2018
+#
+# Revision History
+# 20180601 - Fixed egrep and sed command so they would not match on simmilar user names. (JS)
+# 20180606 - Check for user in group before adding (JS)
+#
+##########
+
+# Set a path 
+PATH=/usr/sbin:/usr/bin:/sbin:/bin:/usr/local/sbin:/usr/local/bin
+
+# System dependent commands, files and variables
+declare -r UNAME=`$(which uname)`
+declare -r SUDOERS=/etc/sudoers 
+declare -r PASSFILE=/etc/passwd
+declare -r SHADOWFILE=/etc/shadow
+declare -r GROUPFILE=/etc/group
+declare -r EGREP=$(which egrep)
+declare -r PASSWD=$(which passwd)
+declare -r PWCONV=$(which pwconv)
+declare -r MKDIR="$(which mkdir) -p"
+declare -r ECHO="$(which echo)"
+declare -r CHMOD=$(which chmod)
+declare -r CHOWN=$(which chown)
+declare -r SED=$(which sed)
+declare -r ID=$(which id)
+declare -r TEE="$(which tee) -a"
+declare -r CAT=$(which cat)
+declare -r DATE=`$(which date)`
+declare -r HOST=`$(which hostname)`
+declare -r SUDO_CMD=$(which sudo)
+declare -r FIND=$(which find)
+declare -r PS=$(which ps)
+declare -r TAIL=$(which tail)
+declare -r ADDUSER=$(which useradd)
+declare -r GROUPADD=$(which groupadd)
+
+# LogFile
+declare -r LOG=/tmp/nlmlhcisg_GPUAddUser.log
+
+# Remove old log file
+[ -e $LOG ] && rm -f $LOG
+
+# echo enviroment for testing
+env >> $LOG
+
+# Default User, only for testing
+_USER="testuser"
+_UID="123456789"
+_GID=$_UID
+HOME="/home/testuser"
+SHELL=$(which nologin)
+
+# Parameters
+if [ $# -gt 1 ]; then
+	_USER=$1
+	_UID=$2
+	_GID=$2
+	HOME=/home/$_USER
+else
+	$ECHO "Need parameters Username and UID" >> $LOG
+	exit 1
+fi
+
+# Echo inputs to log for debugging
+$ECHO "_USER, _UID, _GID, SHELL, HOME: "$_USER, $_UID, $_GID, $SHELL, HOME >> $LOG
+
+# Determine OS type
+if [[ "$UNAME" != "Linux" ]]
+then
+	$ECHO "Need to run on Linux Distro" >> $LOG
+	exit 1
+fi
+
+# Check if user exists in group file
+$EGREP "^$_USER:" /etc/group >/dev/null
+if [ $? -eq 0 ]; then
+    $ECHO "$_USER already exists in group file" >> $LOG
+    exit 1
+fi
+
+# Check if user exists in passwd file
+$EGREP "^$_USER:" /etc/passwd >/dev/null
+if [ $? -eq 0 ]; then
+    $ECHO "$_USER already exists in passwd file" >> $LOG
+    exit 1
+else
+    $ECHO "Creating user, group, home and shaow entries for: $_USER!" >> $LOG
+    # Make the user home directory, group id and user id.  Login shell is /usr/sbin/nologin
+    $GROUPADD --gid $_GID $_USER >> $LOG
+    $ADDUSER --home $HOME --shell $SHELL --uid $_UID --gid $_GID --password NP $_USER >> $LOG
+    $SED -i "s/^$_USER:.*/$_USER:NP:17683::::::/" $SHADOWFILE
+    $MKDIR $HOME >> $LOG
+    # Set ownerership and set file modes
+    $CHOWN -R $_USER:$_USER $HOME && $CHMOD -R 700 $HOME >> $LOG
+    /bin/ls -tal /home >> $LOG
+fi
+exit 0
+_EOF
+
+// move __createfile cebuser.sh
+// waithidden /bin/sh cebuser.sh "{parameter "USERNAME" as trimmed string}" "{parameter "UID" as trimmed string}"
+//wait chmod 555 __createfile
+//wait /bin/sh __createfile "{parameter "USERNAME" as trimmed string}" "{parameter "UID" as trimmed string}"
+//delete __createfile
+
+wait chmod 555 "{(client folder of current site as string) & "/__createfile"}"
+wait "{(client folder of current site as string) & "/__createfile"}" "{parameter "USERNAME" as trimmed string}" "{parameter "UID" as trimmed string}"
+delete __createfile
+]]></ActionScript>
+			<SuccessCriteria Option="RunToCompletion"></SuccessCriteria>
+		</DefaultAction>
+	</Fixlet>
+</BES>
