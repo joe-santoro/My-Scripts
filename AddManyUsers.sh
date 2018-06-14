@@ -4,8 +4,10 @@ set -x
 #################
 # Script to add man users to the CEB GPU cluser
 # Username, UID and expected from an input file
+# Only the Username and UID are used.  GID is set to UID and SHELL is set to /sbin/nologin
+#
 # Input file format example
-#zhangxiaol:##zhangxiaol:21290:212:Xialoi Zhang, CEB:/home/zhangxiaol:/bin/bash
+# nlmlhcnscanner:x:1521:1521:NLM LHC NSCANNER, CR:/export/home/nlmlhcnscanner:/bin/bash
 #
 # Author: Joseph Santoroski
 # Created: June 5, 2018
@@ -46,7 +48,7 @@ declare -r ADDUSER=$(which useradd)
 declare -r GROUPADD=$(which groupadd)
 
 # LogFile
-declare -r LOG=/tmp/nlmlhcisg_GPUAddUser.log
+declare -r LOG=/tmp/nlmlhcisg_AddMany.log
 
 # Remove old log file
 [ -e $LOG ] && rm -f $LOG
@@ -60,20 +62,20 @@ _UID="123456789"
 _GID=$_UID
 HOME="/home/testuser"
 SHELL=$(which nologin)
+INPUT_FILE="/dev/null"
 
 # Parameters
-#if [ $# -gt 1 ]; then
-#	_USER=$1
-#	_UID=$2
-#	_GID=$2
-#	HOME=/home/$_USER
-#else
-#	echo "Need parameters Username and UID" >> $LOG
-#	exit 1
-#fi
-
 if [ $# == 0 ]; then
-	echo "Need input file with this format: zhangxiaol:##zhangxiaol:21290:212:Xialoi Zhang, CEB:/home/zhangxiaol:/bin/bash" >> $LOG
+	echo "Need input file with this format: nlmlhcnscanner:x:1521:1521:NLM LHC NSCANNER, CR:/export/home/nlmlhcnscanner:/bin/bash" >> $LOG
+	exit 1
+else
+	INPUT_FILE=$@
+fi
+
+if [ -f $INPUT_FILE ]; then
+	$ECHO "Input file " $INPUT_FILE " exist" >> $LOG
+else
+	$ECHO "Input file " $INPUT_FILE " does not exist" >> $LOG
 	exit 1
 fi
 
@@ -106,7 +108,8 @@ while IFS=":" read _USER _NAME _UID _GID _FULLNAME _OLDHOME _OLDSHELL; do
     		$CHOWN -R $_USER:$_USER $HOME && $CHMOD -R 700 $HOME >> $LOG
     		/bin/ls -tal /home >> $LOG
         fi
-done <"$@"
+done < "$INPUT_FILE"
 
 exit 0
+
 
