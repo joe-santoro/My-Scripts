@@ -1,0 +1,63 @@
+Wed 08/08/2018 
+11:14 AM
+"----" 
+lhcp-vm-win12-1 
+The command completed successfully.
+
+C:\JDK\jdk-8u181-windows-i586.exe
+C:\JDK\jdk-8u181-windows-x64.exe
+        2 file(s) copied.
+x: was deleted successfully.
+
+lhcp-vm-win12-1 
+"----" 
+Wed 08/08/2018 
+11:18 AM
+Wed 08/08/2018 
+11:26 AM
+"----" 
+LHCP-VM-WIN12-2 
+The command completed successfully.
+
+C:\JDK\jdk-8u181-windows-i586.exe
+C:\JDK\jdk-8u181-windows-x64.exe
+        2 file(s) copied.
+x: was deleted successfully.
+
+LHCP-VM-WIN12-2 
+"----" 
+"----" 
+LHCP-VM-WIN12-3 
+The command completed successfully.
+
+C:\JDK\jdk-8u181-windows-i586.exe
+C:\JDK\jdk-8u181-windows-x64.exe
+        2 file(s) copied.
+x: was deleted successfully.
+
+LHCP-VM-WIN12-3 
+"----" 
+"----" 
+LHCP-VM-WIN12-4 
+The command completed successfully.
+
+C:\JDK\jdk-8u181-windows-i586.exe
+C:\JDK\jdk-8u181-windows-x64.exe
+        2 file(s) copied.
+x: was deleted successfully.
+
+LHCP-VM-WIN12-4 
+"----" 
+"----" 
+LHCP-VM-WIN1210 
+The command completed successfully.
+
+C:\JDK\jdk-8u181-windows-i586.exe
+C:\JDK\jdk-8u181-windows-x64.exe
+        2 file(s) copied.
+x: was deleted successfully.
+
+LHCP-VM-WIN1210 
+"----" 
+Wed 08/08/2018 
+11:42 AM

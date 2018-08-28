@@ -1,0 +1,33 @@
+PS C:\jdk>
+PS C:\jdk> C:\PSTools\PsExec.exe \\lhcp-vm-win12-1 cmd /c c:\temp\VS11-KB4336946.exe /s
+
+PsExec v2.2 - Execute processes remotely
+Copyright (C) 2001-2016 Mark Russinovich
+Sysinternals - www.sysinternals.com
+
+
+cmd exited on lhcp-vm-win12-1 with error code 0.
+PS C:\jdk> C:\PSTools\PsExec.exe \\lhcp-vm-win12-2 cmd /c c:\temp\VS11-KB4336946.exe /s
+
+PsExec v2.2 - Execute processes remotely
+Copyright (C) 2001-2016 Mark Russinovich
+Sysinternals - www.sysinternals.com
+
+
+cmd exited on lhcp-vm-win12-2 with error code 0.
+PS C:\jdk> C:\PSTools\PsExec.exe \\lhcp-vm-win12-3 cmd /c c:\temp\VS11-KB4336946.exe /s
+
+PsExec v2.2 - Execute processes remotely
+Copyright (C) 2001-2016 Mark Russinovich
+Sysinternals - www.sysinternals.com
+
+
+cmd exited on lhcp-vm-win12-3 with error code 0.
+PS C:\jdk> C:\PSTools\PsExec.exe \\lhcp-vm-win12-4 cmd /c c:\temp\VS11-KB4336946.exe /s
+
+PsExec v2.2 - Execute processes remotely
+Copyright (C) 2001-2016 Mark Russinovich
+Sysinternals - www.sysinternals.com
+
+
+cmd exited on lhcp-vm-win12-4 with error code 0.
