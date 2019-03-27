@@ -1,0 +1,289 @@
+Redhat Satellite
+
+Pacemaker cluster install notes:
+
+
+# Set up iDRAC modules on both machines.  See port diagram.
+# connect interface em4 from lhc-rhkvm1 to iDRAC port on lhc-rhkvm2
+# connect interface em4 from lhc-rhkvm2 to iDRAC port on lhc-rhkvm1
+
+Fencing ports:
+lhc-rhkvm1 em4: 10.0.0.3
+lhc-rhkvm1 iDRAC: 10.0.0.1
+lhc-rhkvm2 em4: 10.0.0.4
+lhc-rhkvm2 iDRAC: 10.0.0.2
+
+iDrac Administrator/oh@xxx49Axxx!
+
+[root@lhc-rhkvm1 ~]# cat /etc/sysconfig/network-scripts/ifcfg-em4
+TYPE=Ethernet
+BOOTPROTO=static
+IPV6INIT=no
+IPV6_AUTOCONF=no
+IPV6_FAILURE_FATAL=no
+NM_CONTROLLED=no
+NAME=em4
+DEVICE=em4
+ONBOOT=yes
+IPADDR=10.0.0.3
+NETMASK=255.255.255.0
+
+[root@lhc-rhkvm2 ~]# cat /etc/sysconfig/network-scripts/ifcfg-em4
+TYPE=Ethernet
+BOOTPROTO=static
+NAME=em4
+DEVICE=em4
+ONBOOT=yes
+IPV6INIT=no
+IPV6_AUTOCONF=no
+IPV6_FAILURE_FATAL=no
+NM_CONTROLLED=no
+IPADDR=10.0.0.4
+NETMASK=255.255.255.0
+
+Test access to iDRAC:
+From lhc-rhkvm1:
+[root@lhc-rhkvm1 ~]# ipmitool -I lanplus -U root -H 10.0.0.2 chassis status
+Password: 
+System Power         : on
+Power Overload       : false
+Power Interlock      : inactive
+Main Power Fault     : false
+Power Control Fault  : false
+Power Restore Policy : previous
+Last Power Event     : 
+Chassis Intrusion    : inactive
+Front-Panel Lockout  : inactive
+Drive Fault          : false
+Cooling/Fan Fault    : false
+Sleep Button Disable : not allowed
+Diag Button Disable  : not allowed
+Reset Button Disable : not allowed
+Power Button Disable : allowed
+Sleep Button Disabled: false
+Diag Button Disabled : false
+Reset Button Disabled: false
+Power Button Disabled: false
+
+
+From lhc-rhkvm2:
+[root@lhc-rhkvm2 ~]# ipmitool -I lanplus -U root -H 10.0.0.1 chassis status
+Password: 
+System Power         : on
+Power Overload       : false
+Power Interlock      : inactive
+Main Power Fault     : false
+Power Control Fault  : false
+Power Restore Policy : previous
+Last Power Event     : 
+Chassis Intrusion    : inactive
+Front-Panel Lockout  : inactive
+Drive Fault          : false
+Cooling/Fan Fault    : false
+Sleep Button Disable : not allowed
+Diag Button Disable  : not allowed
+Reset Button Disable : not allowed
+Power Button Disable : allowed
+Sleep Button Disabled: false
+Diag Button Disabled : false
+Reset Button Disabled: false
+Power Button Disabled: false
+
+
+
+Process taken from: 
+https://www.unixarena.com/2015/12/rhel-7-pacemaker-configuring-ha-kvm-guest.html/
+
+
+[root@lhc-rhkvm2 Pacemaker]# ls -la
+total 9396
+drwx------   2 root root    4096 Jan 25 12:01 .
+drwx------. 10 root root    4096 Jan 25 11:54 ..
+-rw-------   1 root root   25520 Nov 12 09:22 clufter-bin-0.77.1-1.el7.x86_64.rpm
+-rw-------   1 root root   74092 Nov 12 10:15 clufter-common-0.77.1-1.el7.noarch.rpm
+-rwx------   1 root root  225040 Jan 23 14:02 corosync-2.4.3-4.el7.x86_64.rpm
+-rwx------   1 root root  134740 Jan 23 14:02 corosynclib-2.4.3-4.el7.x86_64.rpm
+-rwx------   1 root root  471588 Jan 23 14:02 pacemaker-1.1.19-8.el7.x86_64.rpm
+-rwx------   1 root root  358752 Jan 23 14:02 pacemaker-cli-1.1.19-8.el7.x86_64.rpm
+-rwx------   1 root root  158284 Jan 23 14:02 pacemaker-cluster-libs-1.1.19-8.el7.x86_64.rpm
+-rwx------   1 root root  639384 Jan 23 14:02 pacemaker-libs-1.1.19-8.el7.x86_64.rpm
+-rwx------   1 root root 6212396 Jan 23 14:02 pcs-0.9.165-6.el7.centos.x86_64.rpm
+-rwx------   1 root root   35232 Jan 23 14:02 pcsc-lite-libs-1.8.8-8.el7.x86_64.rpm
+-rwx------   1 root root  466616 Jan 23 14:02 policycoreutils-python-2.5-29.el7.x86_64.rpm
+-rwx------   1 root root  330352 Jan 23 14:02 python-clufter-0.77.1-1.el7.noarch.rpm
+-rw-------   1 root root  458036 Nov 12 09:45 resource-agents-4.1.1-12.el7.x86_64.rpm
+
+yum localinstall -y *.rpm
+
+From Redhat CDN: fence-agents should installed with PCS
+
+[root@lhc-rhkvm2 network-scripts]# yum list installed | grep fence
+fence-agents-all.x86_64              4.2.1-11.el7_6.1        @rhel-7-server-rpms
+fence-agents-amt-ws.x86_64           4.2.1-11.el7_6.1        @rhel-7-server-rpms
+fence-agents-apc.x86_64              4.2.1-11.el7_6.1        @rhel-7-server-rpms
+fence-agents-apc-snmp.x86_64         4.2.1-11.el7_6.1        @rhel-7-server-rpms
+fence-agents-bladecenter.x86_64      4.2.1-11.el7_6.1        @rhel-7-server-rpms
+fence-agents-brocade.x86_64          4.2.1-11.el7_6.1        @rhel-7-server-rpms
+fence-agents-cisco-mds.x86_64        4.2.1-11.el7_6.1        @rhel-7-server-rpms
+fence-agents-cisco-ucs.x86_64        4.2.1-11.el7_6.1        @rhel-7-server-rpms
+fence-agents-common.x86_64           4.2.1-11.el7_6.1        @rhel-7-server-rpms
+fence-agents-compute.x86_64          4.2.1-11.el7_6.1        @rhel-7-server-rpms
+fence-agents-drac5.x86_64            4.2.1-11.el7_6.1        @rhel-7-server-rpms
+fence-agents-eaton-snmp.x86_64       4.2.1-11.el7_6.1        @rhel-7-server-rpms
+fence-agents-emerson.x86_64          4.2.1-11.el7_6.1        @rhel-7-server-rpms
+fence-agents-eps.x86_64              4.2.1-11.el7_6.1        @rhel-7-server-rpms
+fence-agents-heuristics-ping.x86_64  4.2.1-11.el7_6.1        @rhel-7-server-rpms
+fence-agents-hpblade.x86_64          4.2.1-11.el7_6.1        @rhel-7-server-rpms
+fence-agents-ibmblade.x86_64         4.2.1-11.el7_6.1        @rhel-7-server-rpms
+fence-agents-ifmib.x86_64            4.2.1-11.el7_6.1        @rhel-7-server-rpms
+fence-agents-ilo-moonshot.x86_64     4.2.1-11.el7_6.1        @rhel-7-server-rpms
+fence-agents-ilo-mp.x86_64           4.2.1-11.el7_6.1        @rhel-7-server-rpms
+fence-agents-ilo-ssh.x86_64          4.2.1-11.el7_6.1        @rhel-7-server-rpms
+fence-agents-ilo2.x86_64             4.2.1-11.el7_6.1        @rhel-7-server-rpms
+fence-agents-intelmodular.x86_64     4.2.1-11.el7_6.1        @rhel-7-server-rpms
+fence-agents-ipdu.x86_64             4.2.1-11.el7_6.1        @rhel-7-server-rpms
+fence-agents-ipmilan.x86_64          4.2.1-11.el7_6.1        @rhel-7-server-rpms
+fence-agents-kdump.x86_64            4.2.1-11.el7_6.1        @rhel-7-server-rpms
+fence-agents-mpath.x86_64            4.2.1-11.el7_6.1        @rhel-7-server-rpms
+fence-agents-rhevm.x86_64            4.2.1-11.el7_6.1        @rhel-7-server-rpms
+fence-agents-rsa.x86_64              4.2.1-11.el7_6.1        @rhel-7-server-rpms
+fence-agents-rsb.x86_64              4.2.1-11.el7_6.1        @rhel-7-server-rpms
+fence-agents-sbd.x86_64              4.2.1-11.el7_6.1        @rhel-7-server-rpms
+fence-agents-scsi.x86_64             4.2.1-11.el7_6.1        @rhel-7-server-rpms
+fence-agents-vmware-rest.x86_64      4.2.1-11.el7_6.1        @rhel-7-server-rpms
+fence-agents-vmware-soap.x86_64      4.2.1-11.el7_6.1        @rhel-7-server-rpms
+fence-agents-wti.x86_64              4.2.1-11.el7_6.1        @rhel-7-server-rpms
+fence-virt.x86_64                    0.3.2-13.el7            @rhel-7-server-rpms
+libxshmfence.x86_64                  1.2-1.el7               @rhel-7-server-rpms
+
+
+[root@lhc-rhkvm2 network-scripts]# cat *em4
+TYPE=Ethernet
+BOOTPROTO=static
+NAME=em4
+DEVICE=em4
+ONBOOT=yes
+NM_CONTROLLED=no
+IPADDR=10.0.0.4
+NETMASK=255.255.255.0
+
+https://clusterlabs.org/quickstart-redhat.html
+http://jensd.be/186/linux/use-drbd-in-a-cluster-with-corosync-and-pacemaker-on-centos-7
+
+Create cluster
+On lhc-rhkvm1  
+  961  pcs cluster setup --force --name lhc-rhsat-cluster lhc-rhkvm1 lhc-rhkvm2
+  962  pcs cluster auth lhc-rhkvm1 lhc-rhkvm2 -u hacluster -p xxxx! --force
+
+On lhc-rhkvm1=2
+  895  pcs cluster auth lhc-rhkvm2 -u hacluster -p xxx! --force
+
+
+On lhc-rhkvm1
+# pcs property set stonith-enabled=false
+# pcs property set no-quorum-policy=ignore
+# pcs stonith create fence_lhc-rhkvm1 fence_ipmilan pcmk_host_list="lhc-rhkvm1" ipaddr="10.0.0.1" lanplus=1 action="reboot" login="root" passwd=‘xxxx!’ inet4_only=true delay=15 op monitor interval=60s --force
+# pcs stonith create fence_lhc-rhkvm21 fence_ipmilan pcmk_host_list="lhc-rhkvm1" ipaddr="10.0.0.2" lanplus=1 action="reboot" login="root" passwd=‘xxxx’ inet4_only=true delay=15 op monitor interval=60s --force
+
+
+# pcs stonith update fence_lhc-rhkvm1 fence_ipmilan pcmk_host_list=“lhc-rhkvm1“ ipaddr="10.0.0.1" login=“root” passwd=‘xxx’ lanplus=1  power_wait=4
+# pcs stonith update fence_lhc-rhkvm2 fence_ipmilan pcmk_host_list=“lhc-rhkvm2” ipaddr="10.0.0.2" login=“root” passwd=‘xxx’ lanplus=1  power_wait=4
+
+
+
+pcs stonith update fence_lhc-rhkvm1 power_wait=10
+ 1227  pcs stonith update fence_lhc-rhkvm1 action=""
+ 1229  pcs stonith update fence_lhc-rhkvm1 pcmk_reboot_action
+
+pcs stonith update fence_lhc-rhkvm1 power_wait=10
+
+ 1234  pcs stonith update fence_lhc-rhkvm2 action=""
+ 1235  pcs stonith update fence_lhc-rhkvm2 pcmk_reboot_action
+ 1241  pcs property set stonith-action=reboot
+
+ 1243   pcs stonith show 
+ 1244   pcs stonith show --full
+
+
+# pcs constraint location fence_lhc-rhkvm1 avoids lhc-rhkvm1
+# pcs constraint location fence_lhc-rhkvm2 avoids lhc-rhkvm2
+
+
+
+# pcs status
+# service pacemaker start ; service corosync start; service pcsd start
+
+# pcs stonith update fence_lhc-rhkvm1 power_timeout=60
+# pcs stonith update fence_lhc-rhkvm2 power_timeout=60
+
+DRBD:
+# pcs cluster cib add_drbd
+# pcs -f add_drbd resource create drbd_lhc-kvm ocf:linbit:drbd drbd_resource=lhc-kvm op monitor interval=60s
+# pcs -f add_drbd resource master drbd_lhc-kvm_clone drbd_lhc-kvm master-max=1 master-node-max=1 clone-max=2 clone-node-max=1 notify=true
+# pcs cluster cib-push add_drbd
+
+
+# pcs resource create fs_drbd Filesystem device="/dev/vg_inside_drbd/lv_inside_drbd" directory="/drbd" fstype="ext4" options="noatime,nodiratime,errors=panic"   
+# pcs resource group add VM_GROUP fs_drbd
+# pcs resource update fs_drbd op monitor interval=30s timeout=60s
+
+
+View PCS resources:
+[root@lhc-rhkvm2 ~]# pcs status resources --full
+
+
+LVM Edit to support nested LVM’s.
+
+change in /etc/lvm/lvm.conf
+global_filter = [ "r|/dev/vg_drbd/lv_drbd|", "a|/dev/sd.*|", "a|/dev/drbd.*|" ]
+
+
+On both nodes:
+[root@lhc-rhkvm2 postfix]# dracut -H -f /boot/initramfs-$(uname -r).img $(uname -r)
+
+
+# pcs resource create lvm_inside_drbd LVM volgrpname=vg_inside_drbd exclusive=false
+
+1007  pcs resource group add VM_GROUP lvm_inside_drbd
+ 1008  pcs resource group add VM_GROUP fs_drbd
+ 1010  pcs constraint colocation add VM_GROUP drbd_lhc-kvm_clone INFINITY with-rsc-role=Master
+ 1011  pcs constraint order promote drbd_lhc-kvm_clone then start VM_GROUP
+ 1013  pcs resource cleanup
+
+#  pcs resource create vm_lhc-rhsat VirtualDomain hypervisor="qemu:///system" snapshot="/drbd" config="/drbd/lhc-rhsat.xml" meta allow-migrate=true op start timeout="120s" op stop timeout="120s" op monitor timeout="30" interval="10"
+#  pcs resource group add VM_GROUP vm_lhc-rhsat
+
+
+
+/etc/libvirt/qemu.conf
+dynamic_ownership = 1
+
+
+
+# pcs resource create ping ocf:pacemaker:ping dampen=10s multiplier=1000 host_list=130.14.49.181 clone
+# pcs constraint location vm_lhc-rhsat rule score=-INFINITY pingd lt 1 or not_defined pingd
+
+
+
+—
+  Resource: fs_drbd (class=ocf provider=heartbeat type=Filesystem)
+   Attributes: device=/dev/vg_inside_drbd/lv_inside_drbd directory=/drbd fstype=ext4 options=noatime,nodiratime,errors=panic
+   Operations: monitor interval=20s timeout=40s (fs_drbd-monitor-interval-20s)
+               notify interval=0s timeout=60s (fs_drbd-notify-interval-0s)
+               start interval=0s timeout=60s (fs_drbd-start-interval-0s)
+               stop interval=0s timeout=60s (fs_drbd-stop-interval-0s)
+
+Changed interval and timeout:
+# pcs resource update fs_drbd op monitor interval=30s timeout=60s
+
+
+  Resource: fs_drbd (class=ocf provider=heartbeat type=Filesystem)
+   Attributes: device=/dev/vg_inside_drbd/lv_inside_drbd directory=/drbd fstype=ext4 options=noatime,nodiratime,errors=panic
+   Operations: monitor interval=30s timeout=60s (fs_drbd-monitor-interval-30s)
+               notify interval=0s timeout=60s (fs_drbd-notify-interval-0s)
+               start interval=0s timeout=60s (fs_drbd-start-interval-0s)
+               stop interval=0s timeout=60s (fs_drbd-stop-interval-0s)
+
+
+
+
